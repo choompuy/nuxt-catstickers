@@ -8,7 +8,6 @@ interface Props {
     lazy?: boolean;
     width?: number | string;
     height?: number | string;
-    rounded?: boolean;
 }
 defineProps<Props>();
 
@@ -23,8 +22,7 @@ const handleLoad = () => {
 
 <template>
     <div
-        class="app-image"
-        :class="{ rounded: rounded }"
+        class="app-image app-shadow"
         :style="{
             width: width ? width + 'px' : '100%',
             height: height ? height + 'px' : 'auto',
@@ -38,18 +36,17 @@ const handleLoad = () => {
 <style scoped lang="scss">
 .app-image {
     position: relative;
-    overflow: hidden;
+    border: $border;
+    border-radius: 0.75rem;
+    background-color: $surface-1;
 
     img {
         display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: opacity 0.2s ease;
-    }
-
-    &.rounded {
-        border-radius: 0.75rem;
+        transition: opacity $transition;
+        border-radius: inherit;
     }
 }
 </style>

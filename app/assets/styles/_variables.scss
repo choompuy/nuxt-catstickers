@@ -1,17 +1,25 @@
 $default-rem: 16px;
 $page-max-width: 1200px;
 $button-height: 48px;
+$button-height-small: 40px;
+$button-height-large: 52px;
 
 $primary-color: #be95ff;
 
 $surface-0: #131313;
 $surface-1: #252525;
 $surface-2: #313131;
+$surface-3: #444444;
 
 $onPrimary: $surface-0;
 $onSurface-0: #f8f8f8;
 
 $border-color-1: #ebebeb;
+
+$border: 2px solid $surface-0;
+$box-shadow: 4px 4px 0 0 $surface-0;
+$transition: 0.3s ease;
+$transition-fancy: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
 
 $spacing-sizes: (
     "xxs": 0.125rem,

@@ -8,6 +8,7 @@
     inset: 0;
     background-color: $surface-1;
     animation: shimmer 2s infinite;
+    border-radius: inherit;
 }
 
 @keyframes shimmer {

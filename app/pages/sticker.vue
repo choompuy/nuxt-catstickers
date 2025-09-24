@@ -2,10 +2,9 @@
 
 <template>
     <main class="flex-column gap-l">
-        <h1 class="exo2-900 text-2xl">Страница со стикером</h1>
-
         <Sticker />
 
+        <h1 class="exo2-900 text-2xl">Страница со стикером</h1>
         <div class="flex-column gap-m">
             <div v-for="n in 15" :key="n" class="card">
                 <h3>Блок {{ n }}</h3>

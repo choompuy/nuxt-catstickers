@@ -25,6 +25,12 @@ main {
 
 a {
     text-decoration: none;
+    transition: opacity $transition;
+
+    &:hover,
+    &:active {
+        opacity: 0.6;
+    }
 }
 
 button {
@@ -33,11 +39,7 @@ button {
     cursor: pointer;
 }
 
-a, button {
+a,
+button {
     color: inherit;
-    transition: opacity .2s ease;
-
-    &:hover, &:active {
-        opacity: .6;
-    }
 }
