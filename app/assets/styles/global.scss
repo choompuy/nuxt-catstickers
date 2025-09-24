@@ -1,0 +1,43 @@
+@use "variables" as *;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    text-wrap-style: balance;
+}
+
+html {
+    font-size: $default-rem;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    background-color: $surface-0;
+    color: $onSurface-0;
+}
+
+main {
+    max-width: $page-max-width;
+    margin-inline: auto;
+}
+
+a {
+    text-decoration: none;
+}
+
+button {
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+a, button {
+    color: inherit;
+    transition: opacity .2s ease;
+
+    &:hover, &:active {
+        opacity: .6;
+    }
+}

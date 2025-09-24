@@ -1,0 +1,38 @@
+@use "variables" as *;
+
+.flex-row {
+    display: inline-flex;
+    align-items: center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+@each $name, $size in $spacing-sizes {
+    .gap-#{$name} {
+        gap: $size;
+    }
+}
+
+@each $name, $size in $text-sizes {
+    .text-#{$name} {
+        font-size: $size !important;
+    }
+}
+
+@mixin exo2 {
+    font-family: "Exo 2", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+.exo2 {
+    @include exo2;
+}
+
+@each $w in 200, 400, 700, 900 {
+    .exo2-#{$w} {
+        @include exo2;
+        font-weight: $w;
+    }
+}

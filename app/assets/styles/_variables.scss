@@ -1,0 +1,35 @@
+$default-rem: 16px;
+$page-max-width: 1200px;
+$button-height: 48px;
+
+$primary-color: #be95ff;
+
+$surface-0: #131313;
+$surface-1: #252525;
+$surface-2: #313131;
+
+$onPrimary: $surface-0;
+$onSurface-0: #f8f8f8;
+
+$border-color-1: #ebebeb;
+
+$spacing-sizes: (
+    "xxs": 0.125rem,
+    "xs": 0.25rem,
+    "s": 0.5rem,
+    "sm": 0.75rem,
+    "m": 1rem,
+    "ml": 1.25rem,
+    "l": 1.5rem,
+    "xl": 2rem,
+);
+
+$text-sizes: (
+    "xs": 0.75rem,
+    "s": 0.875rem,
+    "m": 1rem,
+    "l": 1.25rem,
+    "xl": 1.5rem,
+    "2xl": 2rem,
+    "3xl": 3rem,
+);
