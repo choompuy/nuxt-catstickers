@@ -6,13 +6,7 @@ const imageCount = 3;
 const imageSpacing = -12;
 const imagesMaxSize = (imageSize + imageSpacing - imageSpacing / imageCount) * imageCount + "px";
 const imagesMinSize = imageSize + "px";
-const { data, pending, error } = useFetch(`/api/sticker?limit=${imageCount}`);
-const images = computed(() => {
-    if (pending.value) {
-        return Array(imageCount).fill(null);
-    }
-    return data.value?.images ?? [];
-});
+const { data: cats, error } = useFetch(`/api/cats?limit=${imageCount}`);
 const stickerRef = useTemplateRef("sticker");
 const onSticker = ref(false);
 
@@ -68,9 +62,9 @@ onUnmounted(() => {
                     }"
                 >
                     <AppImage
-                        v-for="(url, idx) in images"
+                        v-for="(cat, idx) in cats"
                         :key="idx"
-                        :src="url"
+                        :src="cat.url"
                         alt="Random cat"
                         :width="imageSize"
                         :height="imageSize"
@@ -78,6 +72,8 @@ onUnmounted(() => {
                         :style="{
                             transform: getTransform(idx),
                         }"
+                        with-border
+                        not-draggable
                     />
                 </div>
                 <div v-else>{{ error }}</div>
@@ -105,6 +101,7 @@ $after-fancy: 0.1s;
     top: 0;
     bottom: 0;
     right: 0;
+    z-index: 10;
 
     .sticker {
         display: grid;

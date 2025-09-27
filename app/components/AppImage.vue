@@ -6,41 +6,56 @@ interface Props {
     src: string;
     alt?: string;
     lazy?: boolean;
-    width?: number | string;
-    height?: number | string;
+    width?: number;
+    height?: number;
+    aspectRatio?: number;
+    withBorder?: boolean;
+    withShadow?: boolean;
+    notDraggable?: boolean;
 }
+
 defineProps<Props>();
 
-const imgRef = useTemplateRef("img");
 const isLoading = ref(true);
 
-const handleLoad = () => {
-    if (imgRef.value) imgRef.value.style.opacity = "";
+const handleLoad = (e: Event) => {
     isLoading.value = false;
 };
 </script>
 
 <template>
     <div
-        class="app-image app-shadow"
+        class="app-image-wrapper"
+        :class="{
+            'app-border': withBorder,
+            'app-shadow': withShadow,
+        }"
         :style="{
             width: width ? width + 'px' : '100%',
             height: height ? height + 'px' : 'auto',
+            aspectRatio: aspectRatio,
         }"
     >
         <Skeleton v-if="isLoading" />
-        <img ref="img" :src="src" :alt="alt || ''" :loading="lazy ? 'lazy' : 'eager'" @load="handleLoad" draggable="false" style="opacity: 0" />
+        <NuxtImg
+            class="app-image"
+            :src="src"
+            :alt="alt || ''"
+            :loading="lazy ? 'lazy' : 'eager'"
+            :draggable="!notDraggable"
+            @load="handleLoad"
+            :style="{ opacity: isLoading ? 0 : 1 }"
+        />
     </div>
 </template>
 
 <style scoped lang="scss">
-.app-image {
+.app-image-wrapper {
     position: relative;
-    border: $border;
     border-radius: 0.75rem;
     background-color: $surface-1;
 
-    img {
+    .app-image {
         display: block;
         width: 100%;
         height: 100%;

@@ -37,6 +37,10 @@
     }
 }
 
+.app-border {
+    border: $border;
+}
+
 .app-shadow {
     position: relative;
     z-index: 0;
