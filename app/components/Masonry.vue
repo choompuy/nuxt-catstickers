@@ -128,11 +128,9 @@ defineExpose({
 </script>
 
 <template>
-    <div ref="masonryRef" class="masonry flex-row gap-m">
-        <div v-for="(col, colIndex) in columns" :key="colIndex" class="masonry-column flex-column gap-m">
-            <div v-for="cat in col" :key="cat.id">
-                <AppImage :src="cat.url || ''" :aspect-ratio="cat.width / cat.height" :alt="'Random cat'" :lazy="true" />
-            </div>
+    <div ref="masonryRef" class="masonry flex-row gap-sm">
+        <div v-for="(col, colIndex) in columns" :key="colIndex" class="masonry-column flex-column gap-sm">
+            <slot v-for="cat in col" :key="cat.id" :cat="cat" :column="colIndex" />
         </div>
     </div>
 </template>

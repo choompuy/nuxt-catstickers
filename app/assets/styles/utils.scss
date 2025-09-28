@@ -10,6 +10,35 @@
     flex-direction: column;
 }
 
+.app-border {
+    border: $border;
+}
+
+.app-shadow {
+    position: relative;
+    z-index: 0;
+
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: $surface-0;
+        border: inherit;
+        border-color: $surface-0;
+        border-radius: inherit;
+        transition: $transition-fancy;
+        transform: translate(4px, 4px);
+        z-index: -1;
+    }
+}
+
+.secondary-text {
+    color: $secondary-text-color;
+}
+
 @each $name, $size in $spacing-sizes {
     .gap-#{$name} {
         gap: $size;
@@ -34,30 +63,5 @@
     .exo2-#{$w} {
         @include exo2;
         font-weight: $w;
-    }
-}
-
-.app-border {
-    border: $border;
-}
-
-.app-shadow {
-    position: relative;
-    z-index: 0;
-
-    &::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: $surface-0;
-        border: inherit;
-        border-color: $surface-0;
-        border-radius: inherit;
-        transition: $transition-fancy;
-        transform: translate(4px, 4px);
-        z-index: -1;
     }
 }

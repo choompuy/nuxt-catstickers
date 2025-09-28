@@ -49,7 +49,11 @@ onMounted(async () => {
 
         <Sticker />
 
-        <Masonry :items="cats" @load-more="handleLoadMore" />
+        <Masonry :items="cats" @load-more="handleLoadMore">
+            <template #default="{ cat }">
+                <CatPreview :cat="cat"/>
+            </template>
+        </Masonry>
 
         <div v-if="loading" class="loading exo2-600 text-s">Loading...</div>
     </main>

@@ -11,9 +11,17 @@ $surface-1: #252525;
 $surface-2: #313131;
 $surface-3: #444444;
 
+$primary-text-color: #be95ff;
+$secondary-text-color: #b1b1b1;
+
 $onPrimary: $surface-0;
 $onSurface-0: #f8f8f8;
 
+$fade-gradient: linear-gradient(
+    0deg,
+    color-mix(in srgb, $surface-0 100%, transparent 50%) 0%,
+    transparent 100%
+);
 $border-color-1: #ebebeb;
 
 $border: 2px solid $surface-0;

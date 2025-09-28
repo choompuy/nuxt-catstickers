@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppButton from "./base/AppButton.vue";
+import AppImage from "./base/AppImage.vue";
 import ArrowLeft from "./icons/ArrowLeft.vue";
 
 const imageSize = 64;
@@ -7,7 +9,6 @@ const imageSpacing = -12;
 const imagesMaxSize = (imageSize + imageSpacing - imageSpacing / imageCount) * imageCount + "px";
 const imagesMinSize = imageSize + "px";
 const { data: cats, error } = useFetch(`/api/cats?limit=${imageCount}`);
-const stickerRef = useTemplateRef("sticker");
 const onSticker = ref(false);
 
 const getSize = (isWidth = true) => {
@@ -29,25 +30,11 @@ const handleMouseEnter = () => {
 const handleMouseLeave = () => {
     onSticker.value = false;
 };
-
-onMounted(() => {
-    if (stickerRef.value) {
-        stickerRef.value.addEventListener("mouseenter", handleMouseEnter);
-        stickerRef.value.addEventListener("mouseleave", handleMouseLeave);
-    }
-});
-
-onUnmounted(() => {
-    if (stickerRef.value) {
-        stickerRef.value.removeEventListener("mouseenter", handleMouseEnter);
-        stickerRef.value.removeEventListener("mouseleave", handleMouseLeave);
-    }
-});
 </script>
 
 <template>
     <div class="sticker-wrapper" :class="{ onSticker: onSticker }">
-        <div ref="sticker" class="sticker gap-s">
+        <div class="sticker gap-s" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
             <div class="sticker-title">
                 <h1 class="exo2-700 text-xl">Консультация эксперта</h1>
             </div>
@@ -72,6 +59,7 @@ onUnmounted(() => {
                         :style="{
                             transform: getTransform(idx),
                         }"
+                        border-radius="0.75rem"
                         with-border
                         not-draggable
                     />

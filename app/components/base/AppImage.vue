@@ -9,8 +9,8 @@ interface Props {
     width?: number;
     height?: number;
     aspectRatio?: number;
+    borderRadius?: string;
     withBorder?: boolean;
-    withShadow?: boolean;
     notDraggable?: boolean;
 }
 
@@ -28,12 +28,12 @@ const handleLoad = (e: Event) => {
         class="app-image-wrapper"
         :class="{
             'app-border': withBorder,
-            'app-shadow': withShadow,
         }"
         :style="{
             width: width ? width + 'px' : '100%',
             height: height ? height + 'px' : 'auto',
             aspectRatio: aspectRatio,
+            borderRadius: borderRadius || '0',
         }"
     >
         <Skeleton v-if="isLoading" />
@@ -52,8 +52,8 @@ const handleLoad = (e: Event) => {
 <style scoped lang="scss">
 .app-image-wrapper {
     position: relative;
-    border-radius: 0.75rem;
     background-color: $surface-1;
+    overflow: hidden;
 
     .app-image {
         display: block;
@@ -61,7 +61,6 @@ const handleLoad = (e: Event) => {
         height: 100%;
         object-fit: cover;
         transition: opacity $transition;
-        border-radius: inherit;
     }
 }
 </style>
