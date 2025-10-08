@@ -2,56 +2,55 @@
 import { ref } from "vue";
 import Masonry from "~/components/Masonry.vue";
 import type { Cat } from "~/types/cat";
+import type { CatQuery } from "~/types/catQuery";
 
 const cats = ref<Cat[]>([]);
 const loading = ref(false);
+const page = ref(0);
 
-const loadCats = async () => {
+const loadCats = async (): Promise<Cat[]> => {
+    if (loading.value) return [];
+
+    loading.value = true;
+    let data: Cat[] = [];
     try {
-        const columnsCount = getColumnsCount();
-        return await $fetch(`/api/cats?limit=${columnsCount * 6}`);
+        const catQuery: CatQuery = {
+            limit: getColumnsCount() * 6,
+            page: page.value,
+            order: "RAND",
+        };
+        data = await $fetch<Cat[]>("/api/cats", { query: catQuery });
     } catch (e) {
-        console.error("Ошибка загрузки котиков:", e);
-        return [];
+        console.error("Error loading cats:", e);
+    } finally {
+        page.value++;
+        loading.value = false;
     }
+
+    return data;
 };
 
 const handleLoadMore = async () => {
-    if (loading.value) return;
-
-    loading.value = true;
-    try {
-        const newCats = await loadCats();
+    const newCats = await loadCats();
+    if (newCats.length !== 0) {
         cats.value.push(...newCats);
-    } finally {
-        loading.value = false;
-    }
-};
-
-const initLoad = async () => {
-    loading.value = true;
-    try {
-        const initialCats = await loadCats();
-        cats.value = initialCats;
-    } finally {
-        loading.value = false;
     }
 };
 
 onMounted(async () => {
-    await initLoad();
+    cats.value = await loadCats();
 });
 </script>
 
 <template>
+    <Sticker />
+
     <main class="flex-column gap-l">
         <h1 class="exo2-900 text-2xl">Home</h1>
 
-        <Sticker />
-
         <Masonry :items="cats" @load-more="handleLoadMore">
             <template #default="{ cat }">
-                <CatPreview :cat="cat"/>
+                <CatPreview :cat="cat" />
             </template>
         </Masonry>
 
@@ -60,14 +59,6 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss">
-main {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-height: 100vh;
-    padding: 1em;
-}
-
 .loading {
     text-align: center;
     margin: auto;

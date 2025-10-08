@@ -11,11 +11,13 @@ export default defineEventHandler(async (event) => {
 
     const apiKey = process.env.API_KEY || "";
 
-    const res = await $fetch<Cat[]>(process.env.API_URL + `/images/${id}`, {
+    const res = await $fetch<Cat>(process.env.API_URL + `/images/${id}`, {
         method: "GET",
         headers: {
             "x-api-key": apiKey,
         },
+    }).catch(error => {
+        throw createError(error);
     });
 
     return res;

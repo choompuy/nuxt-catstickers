@@ -4,47 +4,44 @@ import Skeleton from "./Skeleton.vue";
 
 interface Props {
     src: string;
+    imageWidth: number;
+    imageHeight: number;
+    width?: string;
+    height?: string;
     alt?: string;
-    lazy?: boolean;
-    width?: number;
-    height?: number;
     aspectRatio?: number;
+    loadingMode?: "lazy" | "eager";
+    fitMode?: "cover" | "contain";
     borderRadius?: string;
     withBorder?: boolean;
     notDraggable?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const isLoading = ref(true);
 
-const handleLoad = (e: Event) => {
+const handleLoad = () => {
     isLoading.value = false;
 };
 </script>
 
 <template>
-    <div
-        class="app-image-wrapper"
-        :class="{
-            'app-border': withBorder,
-        }"
-        :style="{
-            width: width ? width + 'px' : '100%',
-            height: height ? height + 'px' : 'auto',
-            aspectRatio: aspectRatio,
-            borderRadius: borderRadius || '0',
-        }"
-    >
-        <Skeleton v-if="isLoading" />
+    <div class="app-image-wrapper" :style="{ aspectRatio: aspectRatio }">
+        <Skeleton v-if="isLoading" :style="{ aspectRatio: aspectRatio, borderRadius: borderRadius || '0', margin: 'auto' }" />
         <NuxtImg
             class="app-image"
+            :class="{ 'app-border': withBorder }"
             :src="src"
+            :width="imageWidth"
+            :height="imageHeight"
+            :loading="loadingMode || 'eager'"
             :alt="alt || ''"
-            :loading="lazy ? 'lazy' : 'eager'"
+            densities="x1"
             :draggable="!notDraggable"
             @load="handleLoad"
-            :style="{ opacity: isLoading ? 0 : 1 }"
+            placeholder
+            :style="{ width: width || 'auto', height: height || 'auto', borderRadius: borderRadius || '0', objectFit: fitMode || 'cover' }"
         />
     </div>
 </template>
@@ -52,14 +49,18 @@ const handleLoad = (e: Event) => {
 <style scoped lang="scss">
 .app-image-wrapper {
     position: relative;
-    background-color: $surface-1;
-    overflow: hidden;
+    display: flex;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+    margin: auto;
 
     .app-image {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+        max-width: 100%;
+        max-height: 100%;
+        margin: auto;
+        box-sizing: content-box;
         transition: opacity $transition;
     }
 }

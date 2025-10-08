@@ -6,9 +6,10 @@
 .skeleton {
     position: absolute;
     inset: 0;
+    max-width: 100%;
+    max-height: 100%;
     background-color: $surface-1;
     animation: shimmer 2s infinite;
-    border-radius: inherit;
 }
 
 @keyframes shimmer {

@@ -12,19 +12,23 @@ html {
 }
 
 body {
-    width: 100%;
-    min-height: 100vh;
     background-color: $surface-0;
     color: $onSurface-0;
 }
 
-main {
-    max-width: $page-max-width;
-    margin-inline: auto;
+#__nuxt {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100vh;
 }
 
-a {
-    text-decoration: none;
+main {
+    flex: 1;
+    width: 100%;
+    max-width: $page-max-width;
+    margin-inline: auto;
+    padding: 1em;
 }
 
 button {
@@ -35,5 +39,6 @@ button {
 
 a,
 button {
+    font: inherit;
     color: inherit;
 }

@@ -1,30 +1,27 @@
 <script setup lang="ts">
 import type { Cat } from "~/types/cat";
 import AppImage from "./base/AppImage.vue";
-import ArrowUpRight from "./icons/ArrowUpRight.vue";
 
 interface Props {
     cat: Cat;
 }
 
-const props = defineProps<Props>();
-
-const isHover = ref(false);
-const isHaveBreeds = computed(() => !!props.cat.breeds[0]?.name);
-
-const handleEnter = () => {
-    isHover.value = true;
-};
-
-const handleLeave = () => {
-    isHover.value = false;
-};
+defineProps<Props>();
 </script>
 
 <template>
-    <NuxtLink :to="`/cat/${cat.id}`" class="cat-preview" ref="catPreview" @mouseenter="handleEnter" @mouseleave="handleLeave">
-        <AppImage :src="cat.url || ''" :aspect-ratio="cat.width / cat.height" :alt="'Random cat'" :lazy="true" />
-        <div class="cat-actions-wrapper" :class="{ active: isHover }">
+    <NuxtLink :to="`/cat/${cat.id}`" class="cat-preview">
+        <AppImage
+            :src="cat.url"
+            :image-width="cat.width"
+            :image-height="cat.height"
+            width="100%"
+            height="100%"
+            :aspect-ratio="cat.width / cat.height"
+            :alt="cat.breeds?.[0]?.name || 'Cat'"
+            :lazy="true"
+        />
+        <div class="cat-actions-wrapper">
             <div class="cat-actions flex-row gap-s exo2-500 text-s">
                 <p
                     class="cat-title"
@@ -34,7 +31,7 @@ const handleLeave = () => {
                 >
                     {{ cat.breeds[0]?.name || "No breed info" }}
                 </p>
-                <ArrowUpRight />
+                <IconsArrowUpRight />
             </div>
         </div>
     </NuxtLink>
@@ -52,6 +49,11 @@ const handleLeave = () => {
         transform: scale(0.98);
     }
 
+    &:hover .cat-actions-wrapper,
+    &:focus-visible .cat-actions-wrapper {
+        opacity: 1;
+    }
+
     .cat-actions-wrapper {
         position: absolute;
         inset: 0;
@@ -60,10 +62,6 @@ const handleLeave = () => {
         background: $fade-gradient;
         opacity: 0;
         transition: opacity $transition;
-
-        &.active {
-            opacity: 1;
-        }
 
         .cat-actions {
             align-items: flex-end;
@@ -77,7 +75,7 @@ const handleLeave = () => {
             flex: 1;
             display: -webkit-box;
             word-break: break-all;
-            -webkit-line-clamp: 2; /* number of lines to show */
+            -webkit-line-clamp: 2;
             line-clamp: 2;
             -webkit-box-orient: vertical;
             text-overflow: ellipsis;

@@ -35,6 +35,12 @@
     }
 }
 
+.text-overflow {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
 .secondary-text {
     color: $secondary-text-color;
 }

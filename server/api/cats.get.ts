@@ -1,20 +1,16 @@
 import type { Cat } from "~/types/cat";
+import type { CatQuery } from "~/types/catQuery";
 
 export default defineEventHandler(async (event) => {
-    const query = getQuery(event);
-    const limit = Number(query.limit) || 10;
-
     const apiKey = process.env.API_KEY || "";
+    const catQuery = getQuery(event) as Partial<CatQuery>;
 
-    const res = await $fetch<Cat[]>(process.env.API_URL + "/images/search", {
+    const res = await $fetch<Cat[]>(`${process.env.API_URL}/images/search`, {
         method: "GET",
         headers: {
             "x-api-key": apiKey,
         },
-        query: {
-            limit,
-            order: "RAND",
-        },
+        query: catQuery
     });
 
     return res;

@@ -1,15 +1,25 @@
 <script setup lang="ts">
+import type { CatQuery } from "~/types/catQuery";
+import type { Cat } from "~/types/cat";
 import AppButton from "./base/AppButton.vue";
 import AppImage from "./base/AppImage.vue";
-import ArrowLeft from "./icons/ArrowLeft.vue";
 
 const imageSize = 64;
+const imageBorder = 4;
 const imageCount = 3;
 const imageSpacing = -12;
-const imagesMaxSize = (imageSize + imageSpacing - imageSpacing / imageCount) * imageCount + "px";
-const imagesMinSize = imageSize + "px";
-const { data: cats, error } = useFetch(`/api/cats?limit=${imageCount}`);
+const imagesMaxSize = (imageSize + imageSpacing - imageSpacing / imageCount) * imageCount + imageBorder + "px";
+const imagesMinSize = imageSize + imageBorder + "px";
 const onSticker = ref(false);
+
+const catQuery: CatQuery = {
+    limit: imageCount,
+    order: "RAND",
+};
+
+const { data: cats, error } = useFetch<Cat[]>("/api/cats", {
+    query: catQuery,
+});
 
 const getSize = (isWidth = true) => {
     if (isWidth) return onSticker.value ? imagesMaxSize : imagesMinSize;
@@ -18,9 +28,9 @@ const getSize = (isWidth = true) => {
 
 const getTransform = (idx: number) => {
     if (onSticker.value) {
-        return `translateX(${idx * (imageSize + imageSpacing)}px)`; // ряд
+        return `translateX(${idx * (imageSize + imageSpacing)}px)`; // row
     }
-    return `translateY(${idx * (imageSize + imageSpacing)}px)`; // колонна
+    return `translateY(${idx * (imageSize + imageSpacing)}px)`; // column
 };
 
 const handleMouseEnter = () => {
@@ -36,7 +46,7 @@ const handleMouseLeave = () => {
     <div class="sticker-wrapper" :class="{ onSticker: onSticker }">
         <div class="sticker gap-s" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
             <div class="sticker-title">
-                <h1 class="exo2-700 text-xl">Консультация эксперта</h1>
+                <h1 class="exo2-700 text-xl">Random Cats</h1>
             </div>
 
             <div class="label">
@@ -52,16 +62,19 @@ const handleMouseLeave = () => {
                         v-for="(cat, idx) in cats"
                         :key="idx"
                         :src="cat.url"
-                        alt="Random cat"
-                        :width="imageSize"
-                        :height="imageSize"
                         class="sticker-image"
-                        :style="{
-                            transform: getTransform(idx),
-                        }"
+                        :image-width="cat.width"
+                        :image-height="cat.height"
+                        :width="imageSize + 'px'"
+                        :height="imageSize + 'px'"
+                        alt="Random cat"
+                        fit-mode="cover"
                         border-radius="0.75rem"
                         with-border
                         not-draggable
+                        :style="{
+                            transform: getTransform(idx),
+                        }"
                     />
                 </div>
                 <div v-else>{{ error }}</div>
@@ -69,10 +82,10 @@ const handleMouseLeave = () => {
 
             <div class="actions flex-row">
                 <span class="action-show">
-                    <ArrowLeft />
+                    <IconsArrowLeft />
                 </span>
                 <AppButton class="action-hide" variant="primary" size="small">
-                    <p class="exo2-600 text-s">Получить консультацию</p>
+                    <p class="exo2-600 text-s">Get random cats</p>
                 </AppButton>
             </div>
         </div>

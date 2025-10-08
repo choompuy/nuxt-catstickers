@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
+import { ref, onMounted, nextTick, watch } from "vue";
 import type { Cat } from "~/types/cat";
 
 interface Props {
@@ -31,14 +31,16 @@ const getColumnHeights = (): number[] => {
     );
 };
 
-const distributeItems = (newCats: Cat[]) => {
-    newCats.forEach((cat) => {
-        const heights = getColumnHeights();
-        const minIndex = heights.length > 0 ? heights.indexOf(Math.min(...heights)) : 0;
-        if (columns.value[minIndex]) {
-            columns.value[minIndex].push(cat);
-        }
-    });
+const distributeItems = (cats: Cat[]) => {
+    try {
+        cats.forEach((cat) => {
+            const heights = getColumnHeights();
+            const minIndex = heights.length > 0 ? heights.indexOf(Math.min(...heights)) : 0;
+            columns.value[minIndex]?.push(cat);
+        });
+    } catch (error) {
+        console.error(error);
+    }
 };
 
 const updateColumns = async () => {
@@ -46,7 +48,7 @@ const updateColumns = async () => {
 
     if (newCount !== columnsCount.value) {
         columnsCount.value = newCount;
-        const allItems = columns.value.flat();
+        const allItems = [...props.items];
         columns.value = Array.from({ length: newCount }, () => []);
         distributeItems(allItems);
     }
@@ -55,48 +57,44 @@ const updateColumns = async () => {
 const handleScroll = () => {
     if (!masonryRef.value) return;
 
-    const containerHeight = masonryRef.value.offsetHeight;
-    const scrollPosition = window.scrollY + window.innerHeight * props.loadThreshold;
+    try {
+        const containerHeight = masonryRef.value.offsetHeight;
+        const scrollPosition = window.scrollY + window.innerHeight * props.loadThreshold;
 
-    if (containerHeight < scrollPosition) {
-        emit("loadMore");
+        if (containerHeight < scrollPosition) {
+            emit("loadMore");
+        }
+    } catch (error) {
+        console.error(error);
     }
 };
 
 const checkInitialLoad = async () => {
     await nextTick();
-    if (masonryRef.value) {
-        while (masonryRef.value.offsetHeight < window.innerHeight * props.loadThreshold) {
-            emit("loadMore");
-            await nextTick();
-            await new Promise((resolve) => setTimeout(resolve, 100));
-        }
+    if (masonryRef.value && masonryRef.value.offsetHeight < window.innerHeight * props.loadThreshold) {
+        emit("loadMore");
     }
 };
 
 const rebuildGrid = async () => {
-    await updateColumns();
-    distributeItems(props.items);
+    columns.value = Array.from({ length: columnsCount.value }, () => []);
+    distributeItems([...props.items]);
     await checkInitialLoad();
 };
 
 watch(
-    () => props.items,
-    async (newItems, oldItems) => {
-        if (newItems.length === 0) {
-            columns.value = Array.from({ length: columnsCount.value }, () => []);
+    () => props.items.length,
+    async (newLength, oldLength) => {
+        if (oldLength <= 0) {
+            distributeItems(props.items);
             return;
         }
 
-        if (newItems.length > (oldItems?.length || 0)) {
-            // if new el added
-            const newItemsToAdd = newItems.slice(oldItems?.length || 0);
-            distributeItems(newItemsToAdd);
-        } else {
-            await rebuildGrid();
+        if (newLength > oldLength) {
+            const newCats = [...props.items].slice(oldLength);
+            distributeItems(newCats);
         }
-    },
-    { deep: true }
+    }
 );
 
 const refresh = async () => {
@@ -107,17 +105,20 @@ const getColumnsData = () => {
     return columns.value;
 };
 
-onMounted(async () => {
-    await updateColumns();
-    await checkInitialLoad();
-
+onActivated(() => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", updateColumns);
 });
 
-onBeforeUnmount(() => {
+onDeactivated(() => {
     window.removeEventListener("scroll", handleScroll);
     window.removeEventListener("resize", updateColumns);
+});
+
+onMounted(async () => {
+    await nextTick();
+    await updateColumns();
+    await checkInitialLoad();
 });
 
 defineExpose({

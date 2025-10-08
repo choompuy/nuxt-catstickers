@@ -1,10 +1,13 @@
 $default-rem: 16px;
 $page-max-width: 1600px;
-$button-height: 48px;
-$button-height-small: 40px;
-$button-height-large: 52px;
+$button-height-small: 2.5rem;
+$button-height: 3rem;
+$button-height-large: 3.25rem;
 
-$primary-color: #be95ff;
+$purple: #be95ff;
+$green: #51cf01;
+$orange: #ffbc01;
+$red: #ff321b;
 
 $surface-0: #131313;
 $surface-1: #252525;
@@ -12,7 +15,7 @@ $surface-2: #313131;
 $surface-3: #444444;
 
 $primary-text-color: #be95ff;
-$secondary-text-color: #b1b1b1;
+$secondary-text-color: #8f8f8f;
 
 $onPrimary: $surface-0;
 $onSurface-0: #f8f8f8;
@@ -22,15 +25,17 @@ $fade-gradient: linear-gradient(
     color-mix(in srgb, $surface-0 100%, transparent 50%) 0%,
     transparent 100%
 );
-$border-color-1: #ebebeb;
 
-$border: 2px solid $surface-0;
+$border-color-1: $surface-3;
+$border-color-2: rgba(97, 97, 97, 0.5);
+
+$border: 2px solid $border-color-1;
 $box-shadow: 4px 4px 0 0 $surface-0;
 $transition: 0.3s ease;
 $transition-fancy: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
 
 $spacing-sizes: (
-    "xxs": 0.125rem,
+    "2xs": 0.125rem,
     "xs": 0.25rem,
     "s": 0.5rem,
     "sm": 0.75rem,
