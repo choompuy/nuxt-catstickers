@@ -18,7 +18,7 @@ defineProps<Props>();
             width="100%"
             height="100%"
             :aspect-ratio="cat.width / cat.height"
-            :alt="cat.breeds?.[0]?.name || 'Cat'"
+            alt="Cat image"
             :lazy="true"
         />
         <div class="cat-actions-wrapper">

@@ -41,7 +41,13 @@ const handleLoad = () => {
             :draggable="!notDraggable"
             @load="handleLoad"
             placeholder
-            :style="{ width: width || 'auto', height: height || 'auto', borderRadius: borderRadius || '0', objectFit: fitMode || 'cover' }"
+            :style="{
+                width: width || 'auto',
+                height: height || 'auto',
+                borderRadius: borderRadius || '0',
+                opacity: isLoading ? 0 : 1,
+                objectFit: fitMode || 'cover',
+            }"
         />
     </div>
 </template>
@@ -61,7 +67,6 @@ const handleLoad = () => {
         max-height: 100%;
         margin: auto;
         box-sizing: content-box;
-        transition: opacity $transition;
     }
 }
 </style>

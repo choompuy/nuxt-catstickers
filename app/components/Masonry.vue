@@ -11,125 +11,197 @@ const props = withDefaults(defineProps<Props>(), {
     loadThreshold: 1.5,
 });
 
-const emit = defineEmits<{
-    loadMore: [];
-}>();
+const emit = defineEmits<{ (e: "loadMore"): void }>();
 
-const masonryRef = ref<HTMLElement | null>(null);
+const masonryRef = useTemplateRef("masonry");
 const columns = ref<Cat[][]>([]);
 const columnsCount = ref(0);
+const isPageActive = ref(true);
+const isLoading = ref(false);
 
-const getColumnHeights = (): number[] => {
-    if (!masonryRef.value || columnsCount.value === 0) return [];
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+let listenersAttached = false;
+
+// If reset === true, rebuild empty columns first and distribute all items
+const distributeItems = (cats: Cat[], reset = false) => {
+    if (!isPageActive.value || !masonryRef.value) return;
+
+    const count = columnsCount.value || getColumnsCount();
+    if (reset || !columns.value.length) {
+        columns.value = Array.from({ length: count }, () => []);
+    } else if (columns.value.length !== count) {
+        // if columns count changed, rebuild empty columns
+        columns.value = Array.from({ length: count }, () => []);
+    }
 
     const colWidth = masonryRef.value.offsetWidth / columnsCount.value;
+    // heights of each column (estimate by aspect ratio)
+    const heights = columns.value.map((col) => col.reduce((sum, cat) => sum + ((cat.height ?? 1) / (cat.width ?? 1)) * colWidth, 0));
 
-    return columns.value.map((col) =>
-        col.reduce((sum, cat) => {
-            return sum + (cat.height / cat.width) * colWidth;
-        }, 0)
-    );
-};
-
-const distributeItems = (cats: Cat[]) => {
-    try {
-        cats.forEach((cat) => {
-            const heights = getColumnHeights();
-            const minIndex = heights.length > 0 ? heights.indexOf(Math.min(...heights)) : 0;
-            columns.value[minIndex]?.push(cat);
-        });
-    } catch (error) {
-        console.error(error);
-    }
-};
-
-const updateColumns = async () => {
-    const newCount = getColumnsCount();
-
-    if (newCount !== columnsCount.value) {
-        columnsCount.value = newCount;
-        const allItems = [...props.items];
-        columns.value = Array.from({ length: newCount }, () => []);
-        distributeItems(allItems);
-    }
-};
-
-const handleScroll = () => {
-    if (!masonryRef.value) return;
-
-    try {
-        const containerHeight = masonryRef.value.offsetHeight;
-        const scrollPosition = window.scrollY + window.innerHeight * props.loadThreshold;
-
-        if (containerHeight < scrollPosition) {
-            emit("loadMore");
+    cats.forEach((cat) => {
+        // find shortest column
+        let minIndex = 0;
+        let min = heights[0] ?? 0;
+        for (let i = 1; i < heights.length; i++) {
+            let currentHeight = heights[i] ?? 0;
+            if (currentHeight < min) {
+                min = currentHeight;
+                minIndex = i;
+            }
         }
-    } catch (error) {
-        console.error(error);
-    }
-};
 
-const checkInitialLoad = async () => {
-    await nextTick();
-    if (masonryRef.value && masonryRef.value.offsetHeight < window.innerHeight * props.loadThreshold) {
-        emit("loadMore");
-    }
+        columns.value[minIndex]?.push(cat);
+        heights[minIndex] = (heights[minIndex] ?? 0) + (cat.height / cat.width) * colWidth;
+    });
 };
 
 const rebuildGrid = async () => {
-    columns.value = Array.from({ length: columnsCount.value }, () => []);
-    distributeItems([...props.items]);
-    await checkInitialLoad();
+    if (!isPageActive.value || !masonryRef.value) return;
+    columnsCount.value = getColumnsCount();
+    distributeItems([...props.items], true);
+    await nextTick();
+    await fillViewportIfNeeded();
+};
+
+const onResize = () => {
+    if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = setTimeout(async () => {
+        if (!masonryRef.value) return;
+        const newCount = getColumnsCount();
+        columnsCount.value = newCount;
+        distributeItems([...props.items], true);
+        await nextTick();
+        await fillViewportIfNeeded();
+    }, 150);
+};
+
+const handleScroll = () => {
+    if (scrollTimeout !== null || !masonryRef.value || isLoading.value) return;
+
+    scrollTimeout = setTimeout(() => {
+        scrollTimeout = null;
+        if (!masonryRef.value || isLoading.value) return;
+
+        const containerHeight = masonryRef.value.offsetHeight;
+        const scrollPosition = window.scrollY + window.innerHeight;
+        const threshold = containerHeight - window.innerHeight * 0.5;
+
+        if (scrollPosition >= threshold) {
+            if (!isLoading.value) {
+                isLoading.value = true;
+                emit("loadMore");
+            }
+        }
+    }, 100);
+};
+
+const fillViewportIfNeeded = async () => {
+    if (!masonryRef.value || !isPageActive.value) return;
+    await nextTick();
+
+    const maxAttempts = 6;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+        await nextTick();
+        if (!masonryRef.value || !isPageActive.value) break;
+
+        const containerHeight = masonryRef.value.offsetHeight;
+        const viewportHeight = window.innerHeight * (props.loadThreshold ?? 1.5);
+
+        // stop if container already fills threshold or currently loading (wait for items)
+        if (containerHeight >= viewportHeight || isLoading.value) break;
+
+        isLoading.value = true;
+        emit("loadMore");
+
+        // wait a bit for parent to fetch/push new items; break if nothing arrives after timeout cycles
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        attempts++;
+    }
 };
 
 watch(
     () => props.items.length,
     async (newLength, oldLength) => {
-        if (oldLength <= 0) {
-            distributeItems(props.items);
+        if (!isPageActive.value) return;
+
+        isLoading.value = false;
+
+        if (newLength === 0) {
+            columns.value = Array.from({ length: columnsCount.value || getColumnsCount() }, () => []);
+            return;
+        }
+
+        if (oldLength === 0 || newLength < oldLength) {
+            await rebuildGrid();
             return;
         }
 
         if (newLength > oldLength) {
-            const newCats = [...props.items].slice(oldLength);
-            distributeItems(newCats);
+            const newCats = props.items.slice(oldLength);
+            distributeItems(newCats, false);
+            await nextTick();
+            await fillViewportIfNeeded();
         }
-    }
+    },
+    { flush: "post" }
 );
 
-const refresh = async () => {
-    await rebuildGrid();
-};
-
-const getColumnsData = () => {
-    return columns.value;
-};
-
-onActivated(() => {
+const attachListeners = () => {
+    if (listenersAttached) return;
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", updateColumns);
+    window.addEventListener("resize", onResize, { passive: true });
+    listenersAttached = true;
+};
+
+const detachListeners = () => {
+    if (!listenersAttached) return;
+    window.removeEventListener("scroll", handleScroll);
+    window.removeEventListener("resize", onResize);
+    listenersAttached = false;
+    if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = null;
+    }
+    if (scrollTimeout !== null) {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = null;
+    }
+};
+
+onActivated(async () => {
+    isPageActive.value = true;
+    attachListeners();
+    isLoading.value = false;
+    await nextTick();
+    await rebuildGrid();
 });
 
 onDeactivated(() => {
-    window.removeEventListener("scroll", handleScroll);
-    window.removeEventListener("resize", updateColumns);
+    isPageActive.value = false;
+    detachListeners();
 });
 
 onMounted(async () => {
+    attachListeners();
+    columnsCount.value = getColumnsCount();
     await nextTick();
-    await updateColumns();
-    await checkInitialLoad();
+    distributeItems([...props.items], true);
+    await nextTick();
+    await fillViewportIfNeeded();
 });
 
-defineExpose({
-    refresh,
-    getColumnsData,
-    updateColumns,
+onBeforeUnmount(() => {
+    detachListeners();
 });
 </script>
 
 <template>
-    <div ref="masonryRef" class="masonry flex-row gap-sm">
+    <div ref="masonry" class="masonry flex-row gap-sm">
         <div v-for="(col, colIndex) in columns" :key="colIndex" class="masonry-column flex-column gap-sm">
             <slot v-for="cat in col" :key="cat.id" :cat="cat" :column="colIndex" />
         </div>

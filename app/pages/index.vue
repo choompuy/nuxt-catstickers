@@ -4,6 +4,16 @@ import Masonry from "~/components/Masonry.vue";
 import type { Cat } from "~/types/cat";
 import type { CatQuery } from "~/types/catQuery";
 
+useHead({
+    title: "Home",
+    meta: [
+        {
+            name: "description",
+            content: "Browse our interactive Masonry cat gallery with infinite scroll and category filters",
+        },
+    ],
+});
+
 const cats = ref<Cat[]>([]);
 const loading = ref(false);
 const page = ref(0);
@@ -61,7 +71,7 @@ onMounted(async () => {
 <style scoped lang="scss">
 .loading {
     text-align: center;
-    margin: auto;
+    margin-inline: auto;
     padding: 1rem;
     color: $onSurface-0;
 }

@@ -14,6 +14,16 @@ const aspectRatio = ref(cat.value ? cat.value.width / cat.value.height : 0);
 const catBreed = ref(cat.value?.breeds?.[0] || null);
 const isFullVisible = ref(false);
 
+useHead({
+    title: catBreed.value?.name || "Cat",
+    meta: [
+        {
+            name: "description",
+            content: catBreed.value?.description || "Cute and unique cat from CatStickers gallery",
+        },
+    ],
+});
+
 const handleCopy = async (url: string) => {
     await navigator.clipboard.writeText(url);
 };
