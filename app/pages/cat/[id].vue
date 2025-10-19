@@ -67,13 +67,7 @@ const handleCopy = async (url: string) => {
                     </AppButton>
                 </div>
 
-                <FullImageViewer
-                    v-if="isFullVisible"
-                    :src="cat.url"
-                    :aspect-ratio="aspectRatio"
-                    :visible="isFullVisible"
-                    @close="isFullVisible = false"
-                />
+                <FullImageViewer :src="cat.url" :aspect-ratio="aspectRatio" :visible="isFullVisible" @close="isFullVisible = false" />
             </div>
 
             <AppCard title="Image">
