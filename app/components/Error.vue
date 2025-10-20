@@ -13,7 +13,7 @@ defineProps<Props>();
     <div class="error-container">
         <div class="error-wrapper flex-column">
             <div class="error-header flex-row gap-s">
-                <h1 class="exo2-600 text-l">⚠️ Error code: {{ error.statusCode || 0 }}</h1>
+                <h1 class="text-l text-weight-600">⚠️ Error code: {{ error.statusCode || 0 }}</h1>
                 <div class="error-buttons flex-row gap-xs">
                     <span class="error-button green"></span>
                     <span class="error-button orange"></span>
@@ -22,11 +22,11 @@ defineProps<Props>();
             </div>
             <div class="error-content flex-column gap-s">
                 <div class="error-message">
-                    <h2 class="text-m exo2-500">
+                    <h2 class="text-m text-weight-500">
                         {{ error.statusMessage || 'Unknown error' }}
                     </h2>
                 </div>
-                <div class="error-actions exo2-500">
+                <div class="error-actions text-weight-500">
                     <BaseAppButton type="link" href="/" variant="secondary">Go back home</BaseAppButton>
                 </div>
             </div>

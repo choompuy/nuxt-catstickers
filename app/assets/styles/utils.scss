@@ -57,17 +57,8 @@
     }
 }
 
-@mixin exo2 {
-    font-family: "Exo 2", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-}
-
-.exo2 {
-    @include exo2;
-}
-
-@each $w in 200, 400, 500, 600, 700, 900 {
-    .exo2-#{$w} {
-        @include exo2;
-        font-weight: $w;
+@for $w from 1 through 9 {
+    .text-weight-#{$w}00 {
+        font-weight: $w * 100;
     }
 }

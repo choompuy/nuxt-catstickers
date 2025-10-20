@@ -46,7 +46,7 @@ const handleMouseLeave = () => {
     <div class="sticker-wrapper" :class="{ onSticker: onSticker }">
         <div class="sticker gap-s" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
             <div class="sticker-title">
-                <h1 class="exo2-700 text-xl">Random Cats</h1>
+                <h1 class="text-xl text-weight-700">Random Cats</h1>
             </div>
 
             <div class="label">
@@ -85,7 +85,7 @@ const handleMouseLeave = () => {
                     <IconsArrowLeft />
                 </span>
                 <AppButton class="action-hide" variant="primary" size="small">
-                    <p class="exo2-600 text-s">Get random cats</p>
+                    <p class="text-s text-weight-600">Get random cats</p>
                 </AppButton>
             </div>
         </div>
@@ -102,7 +102,7 @@ $after-fancy: 0.1s;
     top: 0;
     bottom: 0;
     right: 0;
-    z-index: 10;
+    z-index: 5;
 
     .sticker {
         display: grid;

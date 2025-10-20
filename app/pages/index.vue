@@ -9,7 +9,7 @@ useHead({
     meta: [
         {
             name: "description",
-            content: "Browse our interactive Masonry cat gallery with infinite scroll and category filters",
+            content: "Cat gallery with Masonry layout",
         },
     ],
 });
@@ -55,17 +55,13 @@ onMounted(async () => {
 <template>
     <Sticker />
 
-    <main class="flex-column gap-l">
-        <h1 class="exo2-900 text-2xl">Home</h1>
+    <Masonry :items="cats" @load-more="handleLoadMore">
+        <template #default="{ cat }">
+            <CatPreview :cat="cat" />
+        </template>
+    </Masonry>
 
-        <Masonry :items="cats" @load-more="handleLoadMore">
-            <template #default="{ cat }">
-                <CatPreview :cat="cat" />
-            </template>
-        </Masonry>
-
-        <div v-if="loading" class="loading exo2-600 text-s">Loading...</div>
-    </main>
+    <div v-if="loading || cats.length === 0" class="loading text-s text-weight-600">Loading...</div>
 </template>
 
 <style scoped lang="scss">

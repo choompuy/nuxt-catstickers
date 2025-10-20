@@ -28,7 +28,7 @@ const handleLoad = () => {
 
 <template>
     <div class="app-image-wrapper" :style="{ aspectRatio: aspectRatio }">
-        <Skeleton v-if="isLoading" :style="{ aspectRatio: aspectRatio, borderRadius: borderRadius || '0', margin: 'auto' }" />
+        <Skeleton v-if="isLoading" :border-radius="borderRadius" is-overlay :style="{ aspectRatio: aspectRatio, margin: 'auto' }" />
         <NuxtImg
             class="app-image"
             :class="{ 'app-border': withBorder }"

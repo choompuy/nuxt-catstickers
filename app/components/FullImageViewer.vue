@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
     justify-content: center;
     align-items: center;
     padding: 1rem;
-    background: rgba(0, 0, 0, 0.8);
+    background: $backdrop-color;
     backdrop-filter: blur(4px);
     z-index: 9999;
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface Props {
-    variant?: "primary" | "secondary" | "transparent";
+    variant?: "primary" | "secondary" | "transparent" | "text";
     type?: "button" | "submit" | "reset" | "link";
     size?: "small" | "large";
     href?: string;
@@ -13,7 +13,7 @@ const emit = defineEmits<{
 }>();
 
 const attributes = computed(() => ({
-    class: "app-button",
+    class: "app-button flex-row gap-s",
     "data-variant": props.variant || "primary",
     "data-size": props.size,
 }));
@@ -21,10 +21,10 @@ const attributes = computed(() => ({
 
 <template>
     <div class="app-button-wrapper" :class="{ 'app-shadow': variant === 'primary' }">
-        <NuxtLink v-if="type === 'link'" :to="href" v-bind="attributes">
+        <NuxtLink v-if="type === 'link'" :to="href"  v-bind="attributes">
             <slot />
         </NuxtLink>
-        <button v-else :type="type || 'button'" class="flex-row gap-s" @click="emit('click', $event)" v-bind="attributes">
+        <button v-else :type="type || 'button'" @click="emit('click', $event)" v-bind="attributes">
             <slot />
         </button>
     </div>
@@ -37,8 +37,6 @@ const attributes = computed(() => ({
 }
 
 .app-button {
-    display: flex;
-    align-items: center;
     width: auto;
     min-height: $button-height;
     padding: 0.75rem;
@@ -83,6 +81,23 @@ const attributes = computed(() => ({
     &:hover {
         color: $onSurface-0;
         background-color: $border-color-1;
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
+
+.app-button[data-variant="text"] {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background-color: transparent;
+    transition-property: opacity, transform;
+
+    &:hover,
+    &:active {
+        opacity: 0.6;
     }
 
     &:active {

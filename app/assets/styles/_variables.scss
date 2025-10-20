@@ -15,16 +15,14 @@ $surface-2: #313131;
 $surface-3: #444444;
 
 $primary-text-color: #be95ff;
-$secondary-text-color: #8f8f8f;
+$secondary-text-color: #a3a3a3;
 
 $onPrimary: $surface-0;
 $onSurface-0: #f8f8f8;
 
-$fade-gradient: linear-gradient(
-    0deg,
-    color-mix(in srgb, $surface-0 100%, transparent 50%) 0%,
-    transparent 100%
-);
+$backdrop-color: color-mix(in srgb, $surface-0 100%, transparent 50%);
+
+$fade-gradient: linear-gradient(0deg, $backdrop-color 0%, transparent 100%);
 
 $border-color-1: $surface-3;
 $border-color-2: rgba(97, 97, 97, 0.5);

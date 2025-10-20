@@ -22,7 +22,7 @@ defineProps<Props>();
             :lazy="true"
         />
         <div class="cat-actions-wrapper">
-            <div class="cat-actions flex-row gap-s exo2-500 text-s">
+            <div class="cat-actions flex-row gap-s text-s text-weight-500">
                 <p
                     class="cat-title"
                     :class="{
