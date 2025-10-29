@@ -44,7 +44,7 @@ $inner-color: $surface-3;
     min-height: 250px;
     margin: auto;
     background-color: $onSurface-0;
-    border: 0.375rem solid $onSurface-0;
+    border: $border-2;
     border-radius: 1rem;
     overflow: hidden;
 }
@@ -59,13 +59,6 @@ $inner-color: $surface-3;
         padding-inline: 0.5rem;
         padding-bottom: 0.25rem;
         background-color: $inner-color;
-
-        .error-close {
-            display: flex;
-            border-radius: 50%;
-            background-color: $inner-color;
-            color: $inner-color;
-        }
 
         .error-button {
             width: 0.875rem;

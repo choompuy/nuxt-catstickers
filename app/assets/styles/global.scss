@@ -34,9 +34,8 @@ header {
     left: 0;
     right: 0;
     display: flex;
-    border-bottom: $border;
-    border-width: 1px;
-    backdrop-filter: blur(8px);
+    border-bottom: 1px $border-1;
+    backdrop-filter: blur(24px);
     background-color: $backdrop-color;
     z-index: 10;
 }

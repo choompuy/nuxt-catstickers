@@ -17,7 +17,7 @@ const props = defineProps<Props>();
 .info-card {
     width: 100%;
     padding: 0.75rem;
-    border: $border;
+    border: 2px $border-1;
     border-radius: 0.75rem;
     background: $surface-1;
     overflow: hidden;

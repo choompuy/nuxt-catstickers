@@ -10,10 +10,23 @@ import FullImageViewer from "~/components/FullImageViewer.vue";
 const route = useRoute();
 const router = useRouter();
 
-const { data: cat, pending, error } = await useFetch(`/api/cat/${route.params.id}`, { lazy: true });
+const {
+    data: cat,
+    pending,
+    error,
+} = await useFetch(`/api/cat/${route.params.id}`, {
+    lazy: true,
+    default: () => null,
+});
 
-const aspectRatio = ref(cat.value ? cat.value.width / cat.value.height : 0);
-const catBreed = ref(cat.value?.breeds?.[0] || null);
+const aspectRatio = computed(() => {
+    if (pending.value || !cat.value) return 0;
+    return cat.value.width / cat.value.height;
+});
+const catBreed = computed(() => {
+    if (pending.value || !cat.value) return null;
+    return cat.value.breeds?.[0] || null;
+});
 const isFullVisible = ref(false);
 
 const goBackOrHome = () => {
@@ -40,7 +53,7 @@ const handleCopy = async (url: string) => {
 </script>
 
 <template>
-    <AppButton @click="goBackOrHome" variant="secondary" size="small">
+    <AppButton label="Back" @click="goBackOrHome()" variant="secondary" size="small">
         <IconsArrowLeft />
     </AppButton>
 
@@ -51,6 +64,8 @@ const handleCopy = async (url: string) => {
     </div>
     <Error v-else-if="error" :error="error" />
     <div v-else-if="cat" class="cat-container gap-m">
+        <FullImageViewer v-model:modal-visible="isFullVisible" :src="cat.url" :width="cat.width" :height="cat.height" :aspect-ratio="aspectRatio" />
+
         <div class="grid-main flex-column gap-s">
             <div
                 class="cat-image-container"
@@ -80,8 +95,6 @@ const handleCopy = async (url: string) => {
                     <IconsExpand />
                 </AppButton>
             </div>
-
-            <FullImageViewer :src="cat.url" :aspect-ratio="aspectRatio" :visible="isFullVisible" @close="isFullVisible = false" />
         </div>
 
         <AppCard title="Image">

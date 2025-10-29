@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import Search from "~/components/Search.vue";
 import AppButton from "~/components/base/AppButton.vue";
+import Filter from "~/components/Filter.vue";
 
 const route = useRoute();
-const router = useRouter();
 
 const goHome = async () => {
     if (route.path === "/") {
-        window.scrollTo({ top: 0 });
+        window.scrollY >= 100 ? window.scrollTo({ top: 0 }) : window.location.reload();
     } else {
-        router.push("/");
+        await navigateTo("/");
     }
 };
 </script>
@@ -21,7 +20,9 @@ const goHome = async () => {
                 <IconsCat />
                 <h1 class="text-l text-weight-600">CatStickers</h1>
             </AppButton>
-            <Search />
+            <div class="end flex-row gap-s">
+                <Filter v-if="$route.path === '/'" />
+            </div>
         </div>
     </header>
 

@@ -1,5 +1,23 @@
 @use "variables" as *;
 
+@each $name, $size in $spacing-sizes {
+    .gap-#{$name} {
+        gap: $size;
+    }
+}
+
+@each $name, $size in $text-sizes {
+    .text-#{$name} {
+        font-size: $size !important;
+    }
+}
+
+@for $w from 1 through 9 {
+    .text-weight-#{$w}00 {
+        font-weight: $w * 100;
+    }
+}
+
 .flex-row {
     display: inline-flex;
     align-items: center;
@@ -10,13 +28,17 @@
     flex-direction: column;
 }
 
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
 .app-border {
-    border: $border;
+    border: 2px $border-1;
 }
 
 .app-shadow {
     position: relative;
-    z-index: 0;
+    z-index: auto;
 
     &::after {
         content: "";
@@ -45,20 +67,24 @@
     color: $secondary-text-color;
 }
 
-@each $name, $size in $spacing-sizes {
-    .gap-#{$name} {
-        gap: $size;
-    }
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity $transition-fancy;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
-@each $name, $size in $text-sizes {
-    .text-#{$name} {
-        font-size: $size !important;
-    }
+.slide-down-fade-enter-active,
+.slide-down-fade-leave-active {
+    transition: $transition-pop;
+    transition-property: opacity, filter, transform;
+    will-change: transform;
 }
-
-@for $w from 1 through 9 {
-    .text-weight-#{$w}00 {
-        font-weight: $w * 100;
-    }
+.slide-down-fade-enter-from,
+.slide-down-fade-leave-to {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translate3d(50%, -50%, 0) scale(0);
 }

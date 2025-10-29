@@ -8,9 +8,10 @@ interface Props {
     imageHeight: number;
     width?: string;
     height?: string;
+    loadingMode?: "lazy" | "eager";
+    decoding?: "async" | "sync";
     alt?: string;
     aspectRatio?: number;
-    loadingMode?: "lazy" | "eager";
     fitMode?: "cover" | "contain";
     borderRadius?: string;
     withBorder?: boolean;
@@ -36,8 +37,9 @@ const handleLoad = () => {
             :width="imageWidth"
             :height="imageHeight"
             :loading="loadingMode || 'eager'"
-            :alt="alt || ''"
+            :decoding="decoding ||'auto'"
             densities="x1"
+            :alt="alt || ''"
             :draggable="!notDraggable"
             @load="handleLoad"
             placeholder

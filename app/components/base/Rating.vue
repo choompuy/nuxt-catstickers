@@ -25,7 +25,7 @@ const props = defineProps<Props>();
 .rating-dot {
     width: 0.75rem;
     height: 0.75rem;
-    border: $border;
+    border: 2px $border-1;
     border-radius: 50%;
 
     &.active {

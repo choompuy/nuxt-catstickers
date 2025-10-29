@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div ref="masonry" class="masonry flex-row gap-sm">
-        <div v-for="(col, colIndex) in columns" :key="colIndex" class="masonry-column flex-column gap-sm">
+        <div v-for="(col, colIndex) in columns" :key="'column-' + colIndex" class="masonry-column flex-column gap-sm">
             <slot v-for="cat in col" :key="cat.id" :cat="cat" :column="colIndex" />
         </div>
     </div>

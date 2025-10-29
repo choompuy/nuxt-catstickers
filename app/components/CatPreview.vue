@@ -18,8 +18,9 @@ defineProps<Props>();
             width="100%"
             height="100%"
             :aspect-ratio="cat.width / cat.height"
+            loading-mode="lazy"
+            decoding="async"
             alt="Cat image"
-            :lazy="true"
         />
         <div class="cat-actions-wrapper">
             <div class="cat-actions flex-row gap-s text-s text-weight-500">

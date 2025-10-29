@@ -25,7 +25,7 @@ const loadCats = async (): Promise<Cat[]> => {
     let data: Cat[] = [];
     try {
         const catQuery: CatQuery = {
-            limit: getColumnsCount() * 6,
+            limit: 10,
             page: page.value,
             order: "RAND",
         };
