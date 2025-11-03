@@ -4,6 +4,9 @@ import AppCheckbox from "./base/AppCheckbox.vue";
 import AppInput from "./base/AppInput.vue";
 import AppTag from "./base/AppTag.vue";
 
+const route = useRoute();
+const router = useRouter();
+
 const containerRef = useTemplateRef("container");
 const menuRef = useTemplateRef("menu");
 const modalVisible = ref(false);
@@ -30,7 +33,12 @@ const removeBreed = (id: string) => {
 };
 
 const applyFilter = () => {
-    console.log("Selected breed:", selectedBreeds.value);
+    router.push({
+        query: {
+            ...route.query,
+            breed: selectedBreeds.value.join(",") || undefined,
+        },
+    });
     close();
 };
 
@@ -44,7 +52,15 @@ const updateMenuPosition = () => {
 
 const show = async () => {
     await nextTick();
+
     updateMenuPosition();
+
+    const breedsParam = (route.query.breed as string) || "";
+    if (breedsParam === "") {
+        selectedBreeds.value = [];
+        return;
+    }
+    selectedBreeds.value = breedsParam.split(",").filter(Boolean);
 };
 
 const close = () => {

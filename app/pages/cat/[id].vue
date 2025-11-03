@@ -19,14 +19,18 @@ const {
     default: () => null,
 });
 
+const { cats, loading, loadCats } = useCats();
+
 const aspectRatio = computed(() => {
     if (pending.value || !cat.value) return 0;
     return cat.value.width / cat.value.height;
 });
+
 const catBreed = computed(() => {
     if (pending.value || !cat.value) return null;
     return cat.value.breeds?.[0] || null;
 });
+const breedId = computed(() => catBreed.value?.id);
 const isFullVisible = ref(false);
 
 const goBackOrHome = () => {
@@ -50,6 +54,10 @@ useHead({
 const handleCopy = async (url: string) => {
     await navigator.clipboard.writeText(url);
 };
+
+const handleLoadMore = async () => {
+    await loadCats(breedId.value);
+};
 </script>
 
 <template>
@@ -63,128 +71,142 @@ const handleCopy = async (url: string) => {
         <Skeleton border-radius=".75rem" />
     </div>
     <Error v-else-if="error" :error="error" />
-    <div v-else-if="cat" class="cat-container gap-m">
-        <FullImageViewer v-model:modal-visible="isFullVisible" :src="cat.url" :width="cat.width" :height="cat.height" :aspect-ratio="aspectRatio" />
+    <template v-else-if="cat">
+        <div class="cat-container gap-m">
+            <FullImageViewer
+                v-model:modal-visible="isFullVisible"
+                :src="cat.url"
+                :width="cat.width"
+                :height="cat.height"
+                :aspect-ratio="aspectRatio"
+            />
 
-        <div class="grid-main flex-column gap-s">
-            <div
-                class="cat-image-container"
-                :style="{
-                    aspectRatio: aspectRatio,
-                }"
-            >
-                <AppImage
-                    :src="cat.url"
-                    :image-width="cat.width"
-                    :image-height="cat.height"
-                    :aspect-ratio="aspectRatio"
-                    width="100%"
-                    height="100%"
-                    :alt="cat.breeds?.[0]?.name || 'Cat'"
-                    border-radius="0.75rem"
-                    fit-mode="contain"
-                />
+            <div class="grid-main flex-column gap-s">
+                <div
+                    class="cat-image-container"
+                    :style="{
+                        aspectRatio: aspectRatio,
+                    }"
+                >
+                    <AppImage
+                        :src="cat.url"
+                        :image-width="cat.width"
+                        :image-height="cat.height"
+                        :aspect-ratio="aspectRatio"
+                        width="100%"
+                        height="100%"
+                        :alt="cat.breeds?.[0]?.name || 'Cat'"
+                        border-radius="0.75rem"
+                        fit-mode="contain"
+                    />
+                </div>
+                <div class="image-actions flex-row gap-s text-s">
+                    <AppButton @click="handleCopy(cat.url)" variant="secondary" size="small">
+                        <p>Copy URL</p>
+                        <IconsCopy />
+                    </AppButton>
+                    <AppButton @click="isFullVisible = true" variant="secondary" size="small">
+                        <p>Expand</p>
+                        <IconsExpand />
+                    </AppButton>
+                </div>
             </div>
-            <div class="image-actions flex-row gap-s text-s">
-                <AppButton @click="handleCopy(cat.url)" variant="secondary" size="small">
-                    <p>Copy URL</p>
-                    <IconsCopy />
-                </AppButton>
-                <AppButton @click="isFullVisible = true" variant="secondary" size="small">
-                    <p>Expand</p>
-                    <IconsExpand />
-                </AppButton>
-            </div>
+
+            <AppCard title="Image">
+                <ul class="list">
+                    <li>
+                        <p><strong>Width:</strong></p>
+                        <p>{{ cat.width }}</p>
+                    </li>
+                    <li>
+                        <p><strong>Height:</strong></p>
+                        <p>{{ cat.height }}</p>
+                    </li>
+                    <li>
+                        <p><strong>URL:</strong></p>
+                        <NuxtLink class="text-overflow" :to="cat.url" target="_blank">{{ cat.url.replace("https://", "") }}</NuxtLink>
+                    </li>
+                </ul>
+            </AppCard>
+
+            <AppCard v-if="!catBreed" class="no-info">
+                <p style="text-align: center">No breed info</p>
+            </AppCard>
+            <template v-else>
+                <AppCard class="stats" title="Stats">
+                    <ul class="list">
+                        <li>
+                            <p>Affection:</p>
+                            <Rating name="affection_level" :length="5" :rating="catBreed.affection_level" />
+                        </li>
+                        <li>
+                            <p>Energy:</p>
+                            <Rating name="energy_level" :length="5" :rating="catBreed.energy_level" />
+                        </li>
+                        <li>
+                            <p>Intelligence:</p>
+                            <Rating name="intelligence" :length="5" :rating="catBreed.intelligence" />
+                        </li>
+                        <li>
+                            <p>Child friendly:</p>
+                            <Rating name="child_friendly" :length="5" :rating="catBreed.child_friendly" />
+                        </li>
+                        <li>
+                            <p>Dog friendly:</p>
+                            <Rating name="dog_friendly" :length="5" :rating="catBreed.dog_friendly" />
+                        </li>
+                    </ul>
+                </AppCard>
+
+                <AppCard class="cat-info">
+                    <h2 class="text-l">{{ catBreed.name }}</h2>
+                    <p class="breed-description">{{ catBreed.description }}</p>
+                    <ul class="list">
+                        <li>
+                            <p>
+                                <strong>Origin:</strong>
+                            </p>
+                            <p>{{ catBreed.origin }} ({{ catBreed.country_code }})</p>
+                        </li>
+                        <li>
+                            <p>
+                                <strong>Weight:</strong>
+                            </p>
+                            <p>{{ catBreed.weight.metric }} kg</p>
+                        </li>
+                        <li>
+                            <p>
+                                <strong>Lifespan:</strong>
+                            </p>
+                            <p>{{ catBreed.life_span }} years</p>
+                        </li>
+                        <li>
+                            <p>
+                                <strong>Temperament:</strong>
+                            </p>
+                            <p>
+                                {{ catBreed.temperament }}
+                            </p>
+                        </li>
+                    </ul>
+                </AppCard>
+
+                <AppCard title="More info">
+                    <div class="flex-row gap-s">
+                        <a v-if="catBreed.wikipedia_url" :href="catBreed.wikipedia_url" target="_blank">Wikipedia</a>
+                        <a v-if="catBreed.cfa_url" :href="catBreed.cfa_url" target="_blank">CFA</a>
+                        <a v-if="catBreed.vcahospitals_url" :href="catBreed.vcahospitals_url" target="_blank">VCA</a>
+                    </div>
+                </AppCard>
+            </template>
         </div>
 
-        <AppCard title="Image">
-            <ul class="list">
-                <li>
-                    <p><strong>Width:</strong></p>
-                    <p>{{ cat.width }}</p>
-                </li>
-                <li>
-                    <p><strong>Height:</strong></p>
-                    <p>{{ cat.height }}</p>
-                </li>
-                <li>
-                    <p><strong>URL:</strong></p>
-                    <NuxtLink class="text-overflow" :to="cat.url" target="_blank">{{ cat.url.replace("https://", "") }}</NuxtLink>
-                </li>
-            </ul>
-        </AppCard>
-
-        <AppCard v-if="!catBreed" class="no-info">
-            <p style="text-align: center">No breed info</p>
-        </AppCard>
-        <template v-else>
-            <AppCard class="stats" title="Stats">
-                <ul class="list">
-                    <li>
-                        <p>Affection:</p>
-                        <Rating name="affection_level" :length="5" :rating="catBreed.affection_level" />
-                    </li>
-                    <li>
-                        <p>Energy:</p>
-                        <Rating name="energy_level" :length="5" :rating="catBreed.energy_level" />
-                    </li>
-                    <li>
-                        <p>Intelligence:</p>
-                        <Rating name="intelligence" :length="5" :rating="catBreed.intelligence" />
-                    </li>
-                    <li>
-                        <p>Child friendly:</p>
-                        <Rating name="child_friendly" :length="5" :rating="catBreed.child_friendly" />
-                    </li>
-                    <li>
-                        <p>Dog friendly:</p>
-                        <Rating name="dog_friendly" :length="5" :rating="catBreed.dog_friendly" />
-                    </li>
-                </ul>
-            </AppCard>
-
-            <AppCard class="cat-info">
-                <h2 class="text-l">{{ catBreed.name }}</h2>
-                <p class="breed-description">{{ catBreed.description }}</p>
-                <ul class="list">
-                    <li>
-                        <p>
-                            <strong>Origin:</strong>
-                        </p>
-                        <p>{{ catBreed.origin }} ({{ catBreed.country_code }})</p>
-                    </li>
-                    <li>
-                        <p>
-                            <strong>Weight:</strong>
-                        </p>
-                        <p>{{ catBreed.weight.metric }} kg</p>
-                    </li>
-                    <li>
-                        <p>
-                            <strong>Lifespan:</strong>
-                        </p>
-                        <p>{{ catBreed.life_span }} years</p>
-                    </li>
-                    <li>
-                        <p>
-                            <strong>Temperament:</strong>
-                        </p>
-                        <p>
-                            {{ catBreed.temperament }}
-                        </p>
-                    </li>
-                </ul>
-            </AppCard>
-
-            <AppCard title="More info">
-                <div class="flex-row gap-s">
-                    <a v-if="catBreed.wikipedia_url" :href="catBreed.wikipedia_url" target="_blank">Wikipedia</a>
-                    <a v-if="catBreed.cfa_url" :href="catBreed.cfa_url" target="_blank">CFA</a>
-                    <a v-if="catBreed.vcahospitals_url" :href="catBreed.vcahospitals_url" target="_blank">VCA</a>
-                </div>
-            </AppCard>
-        </template>
-    </div>
+        <Masonry :items="cats.filter((v) => v.id !== cat?.id)" @load-more="handleLoadMore" :loading="loading">
+            <template #default="{ cat }">
+                <CatPreview :cat="cat" />
+            </template>
+        </Masonry>
+    </template>
 </template>
 
 <style lang="scss" scoped>

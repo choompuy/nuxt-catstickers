@@ -5,6 +5,7 @@ import type { Cat } from "~/types/cat";
 interface Props {
     items: Cat[];
     loadThreshold?: number;
+    loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -85,15 +86,12 @@ const handleScroll = () => {
         scrollTimeout = null;
         if (!masonryRef.value || isLoading.value) return;
 
-        const containerHeight = masonryRef.value.offsetHeight;
-        const scrollPosition = window.scrollY + window.innerHeight;
-        const threshold = containerHeight - window.innerHeight * 0.5;
+        const container = masonryRef.value.getBoundingClientRect();
+        const threshold = window.innerHeight * 1.5;
 
-        if (scrollPosition >= threshold) {
-            if (!isLoading.value) {
-                isLoading.value = true;
-                emit("loadMore");
-            }
+        if (container.bottom - threshold <= 0) {
+            isLoading.value = true;
+            emit("loadMore");
         }
     }, 100);
 };
@@ -106,14 +104,15 @@ const fillViewportIfNeeded = async () => {
     let attempts = 0;
 
     while (attempts < maxAttempts) {
-        await nextTick();
         if (!masonryRef.value || !isPageActive.value) break;
+        await nextTick();
 
-        const containerHeight = masonryRef.value.offsetHeight;
-        const viewportHeight = window.innerHeight * (props.loadThreshold ?? 1.5);
+        const container = masonryRef.value.getBoundingClientRect();
+        const containerBottom = container.bottom + window.scrollY;
+        const viewportBottom = window.scrollY + window.innerHeight;
 
         // stop if container already fills threshold or currently loading (wait for items)
-        if (containerHeight >= viewportHeight || isLoading.value) break;
+        if (containerBottom > viewportBottom * (props.loadThreshold ?? 1.5) || isLoading.value) break;
 
         isLoading.value = true;
         emit("loadMore");
@@ -206,9 +205,17 @@ onBeforeUnmount(() => {
             <slot v-for="cat in col" :key="cat.id" :cat="cat" :column="colIndex" />
         </div>
     </div>
+    <div v-if="loading" class="loading text-s text-weight-600">Loading...</div>
 </template>
 
 <style scoped lang="scss">
+.loading {
+    text-align: center;
+    margin-inline: auto;
+    padding: 1rem;
+    color: $onSurface-0;
+}
+
 .masonry {
     align-items: flex-start;
 }
