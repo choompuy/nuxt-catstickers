@@ -2,6 +2,7 @@
 import type { InputTypeHTMLAttribute } from "vue";
 
 interface Props {
+    id?: string;
     type?: InputTypeHTMLAttribute;
     placeholder?: string;
 }
@@ -11,7 +12,7 @@ const value = defineModel<any>("modelValue");
 
 <template>
     <div class="app-input-container">
-        <input v-model="value" class="app-input" :type="type || 'text'" :placeholder="placeholder" />
+        <input v-model="value" :id="id" class="app-input" :type="type || 'text'" :placeholder="placeholder" />
     </div>
 </template>
 

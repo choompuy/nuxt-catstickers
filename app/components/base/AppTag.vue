@@ -1,6 +1,7 @@
 <script setup lang="ts">
 interface Props {
     label?: string;
+    variant?: "primary" | "danger";
 }
 
 const props = defineProps<Props>();
@@ -12,7 +13,7 @@ const emit = defineEmits<{
 
 <template>
     <div class="app-tag-container">
-        <button class="app-tag" type="button" @click="emit('click', $event)">
+        <button class="app-tag" type="button" @click="emit('click', $event)" :data-variant="variant || 'primary'">
             {{ label }}
         </button>
     </div>
@@ -22,19 +23,32 @@ const emit = defineEmits<{
 .app-tag-container {
     .app-tag {
         padding: 0.25rem 0.5rem;
-        border: 1px $border-1;
+        border: 2px $border-1;
         border-radius: 0.5rem;
-        background-color: $surface-1;
+        text-wrap: nowrap;
         transition: $transition-fancy;
         transition-property: background-color, transform;
         cursor: pointer;
 
-        &:hover {
-            background-color: $border-color-1;
-        }
-
         &:active {
             transform: scale(0.98);
+        }
+
+        &[data-variant="primary"] {
+            background-color: $surface-1;
+
+            &:hover {
+                background-color: $border-color-1;
+            }
+        }
+
+        &[data-variant="danger"] {
+            border-color: $red-background;
+            color: $red;
+
+            &:hover {
+                background-color: $red-background;
+            }
         }
     }
 }

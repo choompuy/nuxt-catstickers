@@ -12,7 +12,7 @@ export const useCats = () => {
 
     const resetCats = () => {
         if (controller) {
-            controller.abort("Resetting cat list");
+            controller.abort("Abort: Resetting cats");
             controller = null;
         }
 
@@ -25,11 +25,11 @@ export const useCats = () => {
     const loadCats = async (breed_ids?: string) => {
         if (loading.value || !hasMore.value) return;
 
-        if (controller) controller.abort("New request initiated");
+        if (controller) controller.abort("Abort: New loadCats request");
         controller = new AbortController();
-
+        
         loading.value = true;
-
+        
         try {
             const query: CatQuery = {
                 limit: 10,
@@ -53,11 +53,7 @@ export const useCats = () => {
 
             page.value++;
         } catch (error: any) {
-            if (error.name === "AbortError") {
-                console.warn("Request aborted");
-                return;
-            }
-            console.error(error);
+            console.warn(error);
         } finally {
             loading.value = false;
         }

@@ -60,7 +60,7 @@ defineProps<Props>();
         inset: 0;
         display: flex;
         background: $surface-0;
-        background: $fade-gradient;
+        background: $fade-gradient-to-top;
         opacity: 0;
         transition: opacity $transition;
 

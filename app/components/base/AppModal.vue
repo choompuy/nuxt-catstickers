@@ -7,7 +7,10 @@ interface Props {
 }
 
 defineProps<Props>();
-const visible = defineModel<boolean>("visible");
+const visible = defineModel<boolean>("visible", {
+    type: Boolean,
+    required: true,
+});
 
 const close = () => {
     visible.value = false;

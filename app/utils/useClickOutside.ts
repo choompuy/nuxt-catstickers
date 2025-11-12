@@ -1,13 +1,9 @@
-export function useClickOutside(
-    targetRef: Ref<HTMLElement | null>,
-    callback: (event: MouseEvent) => void,
-    condition?: Ref<boolean | undefined> | (() => boolean)
-) {
+export function useClickOutside(targetRef: Ref<HTMLElement | null>, callback: (event: MouseEvent) => void, condition: Ref<boolean>) {
     const handler = (event: MouseEvent) => {
         const el = targetRef.value;
         if (!el) return;
 
-        const isActive = condition === undefined ? true : typeof condition === "function" ? condition() : condition.value;
+        const isActive = condition.value;
         if (!isActive) return;
 
         if (!el.contains(event.target as Node)) {
@@ -21,7 +17,5 @@ export function useClickOutside(
     onBeforeUnmount(() => removeEventListener());
     onDeactivated(() => removeEventListener());
 
-    if (condition && typeof condition !== "function") {
-        watch(condition, (val) => (!val ? removeEventListener() : addEventListener()));
-    }
+    watch(condition, (value) => (value ? addEventListener() : removeEventListener()));
 }

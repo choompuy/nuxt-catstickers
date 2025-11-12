@@ -259,7 +259,7 @@ $row-height: 120px;
     justify-content: space-between;
 }
 
-@media (width >= 600px) {
+@media (width >= breakpoint(mobile)) {
     .grid-loading {
         grid-template-rows: $image-height $row-height;
     }
@@ -278,7 +278,7 @@ $row-height: 120px;
     }
 }
 
-@media (width >= 900px) {
+@media (width >= breakpoint(tablet)) {
     .grid-loading {
         grid-template-columns: 2fr 1fr 1fr;
         grid-template-rows: 1fr 1fr 1fr;
@@ -298,8 +298,5 @@ $row-height: 120px;
     .cat-info {
         grid-column: 2 span;
     }
-}
-
-@media (width >= 1200px) {
 }
 </style>

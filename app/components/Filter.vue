@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import type { CatBreed } from "~/types/cat";
 import AppButton from "./base/AppButton.vue";
 import AppCheckbox from "./base/AppCheckbox.vue";
 import AppInput from "./base/AppInput.vue";
 import AppTag from "./base/AppTag.vue";
 
 const route = useRoute();
-const router = useRouter();
 
 const containerRef = useTemplateRef("container");
 const menuRef = useTemplateRef("menu");
@@ -13,10 +13,7 @@ const modalVisible = ref(false);
 const search = ref("");
 const selectedBreeds = ref<string[]>([]);
 
-const { data: breeds } = await useFetch("/api/breeds", {
-    lazy: true,
-    default: () => [],
-});
+const breeds = inject<Ref<CatBreed[]>>("breeds", ref([]));
 
 const filteredBreeds = computed(() => breeds.value.filter((b) => b.name.toLowerCase().includes(search.value.toLowerCase())));
 
@@ -33,7 +30,7 @@ const removeBreed = (id: string) => {
 };
 
 const applyFilter = () => {
-    router.push({
+    navigateTo({
         query: {
             ...route.query,
             breed: selectedBreeds.value.join(",") || undefined,
@@ -69,6 +66,7 @@ const close = () => {
 
 watch(modalVisible, (value) => (value ? show() : close()));
 
+useBodyScrollLock(modalVisible);
 useKeyDown(["Escape"], close, modalVisible);
 useClickOutside(containerRef, close, modalVisible);
 </script>
@@ -83,7 +81,7 @@ useClickOutside(containerRef, close, modalVisible);
         <Transition name="slide-down-fade">
             <div v-if="modalVisible" ref="menu" class="filter-menu flex-column">
                 <div class="filter-menu__header flex-column gap-s">
-                    <AppInput v-model:model-value="search" id="filter-search" placeholder="Search breed..." />
+                    <AppInput v-model:model-value="search" id="filter-search" type="search" placeholder="Search breed..." />
 
                     <div class="breeds-control flex-row">
                         <p class="text-s">Breeds ({{ selectedBreeds.length }}/{{ breeds.length }})</p>
@@ -178,7 +176,7 @@ useClickOutside(containerRef, close, modalVisible);
     scrollbar-width: thin;
 }
 
-@media (width >= 600px) {
+@media (width >= breakpoint(mobile)) {
     .filter-menu {
         left: auto;
         right: auto;

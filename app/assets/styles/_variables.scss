@@ -9,11 +9,6 @@ $icon-size-small: 1rem;
 $icon-size: 1.5rem;
 $icon-size-large: 2rem;
 
-$purple: #be95ff;
-$green: #51cf01;
-$orange: #ffbc01;
-$red: #ff321b;
-
 $surface-0: #131313;
 $surface-1: #252525;
 $surface-2: #313131;
@@ -25,9 +20,16 @@ $secondary-text-color: #a3a3a3;
 $onPrimary: $surface-0;
 $onSurface-0: #f8f8f8;
 
+$purple: #be95ff;
+$green: #51cf01;
+$orange: #ffbc01;
+$red: #e02b17;
+$red-background: color-mix(in srgb, $red 50%, $surface-0 100%);
+
 $backdrop-color: color-mix(in srgb, $surface-0 100%, transparent 50%);
 
-$fade-gradient: linear-gradient(0deg, $backdrop-color 0%, transparent 100%);
+$fade-gradient-to-bottom: linear-gradient(0deg, transparent 0%, $backdrop-color 100%);
+$fade-gradient-to-top: linear-gradient(0deg, $backdrop-color 0%, transparent 100%);
 
 $border-color-1: $surface-3;
 $border-color-2: $secondary-text-color;
@@ -41,6 +43,12 @@ $box-shadow-2: 0 0 0.5rem $backdrop-color;
 $transition: 0.3s ease;
 $transition-fancy: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
 $transition-pop: 0.3s cubic-bezier(0.74, -0.03, 0.05, 1.24);
+
+$breakpoints: (
+    "mobile": 600px,
+    "tablet": 900px,
+    "desktop": 1280px,
+);
 
 $spacing-sizes: (
     "2xs": 0.125rem,
