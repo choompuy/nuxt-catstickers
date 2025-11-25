@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import type { NuxtError } from "#app";
 import type { FetchError } from "ofetch";
+import AppButton from "./base/AppButton.vue";
 
 interface Props {
     error: FetchError | NuxtError;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+onMounted(() => {
+    console.error(props.error.message);
+});
 </script>
 
 <template>
@@ -23,11 +28,11 @@ defineProps<Props>();
             <div class="error-content flex-column gap-s">
                 <div class="error-message">
                     <h2 class="text-m text-weight-500">
-                        {{ error.statusMessage || 'Unknown error' }}
+                        {{ error.statusMessage || "Unknown error" }}
                     </h2>
                 </div>
                 <div class="error-actions text-weight-500">
-                    <BaseAppButton type="link" href="/" variant="secondary">Go back home</BaseAppButton>
+                    <AppButton type="link" href="/" variant="secondary">Go back home</AppButton>
                 </div>
             </div>
         </div>

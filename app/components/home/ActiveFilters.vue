@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import AppButton from "./base/AppButton.vue";
-import AppTag from "./base/AppTag.vue";
 import type { CatBreed } from "~/types/cat";
+import AppTag from "~/components/base/AppTag.vue";
 
 const route = useRoute();
 const router = useRouter();

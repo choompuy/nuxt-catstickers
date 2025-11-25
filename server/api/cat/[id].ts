@@ -1,5 +1,9 @@
-import type { Cat } from "~/types/cat";
 import { defineEventHandler, getRouterParam } from "h3";
+import type { Cat } from "~/types/cat";
+import { apiRequest } from "~~/server/utils/apiClient";
+
+const apiUrl = process.env.API_URL || "";
+const apiKey = process.env.API_KEY || "";
 
 export default defineEventHandler(async (event) => {
     const id = getRouterParam(event, "id");
@@ -7,18 +11,11 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, statusMessage: "Cat ID is required" });
     }
 
-    const query = getQuery(event);
-
-    const apiKey = process.env.API_KEY || "";
-
-    const res = await $fetch<Cat>(process.env.API_URL + `/images/${id}`, {
-        method: "GET",
-        headers: {
-            "x-api-key": apiKey,
+    return await apiRequest<Cat>(
+        `${apiUrl}/images/${id}`,
+        {
+            headers: { "x-api-key": apiKey },
         },
-    }).catch(error => {
-        throw createError(error);
-    });
-
-    return res;
+        event
+    );
 });

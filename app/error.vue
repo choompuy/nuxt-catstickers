@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { NuxtError } from "#app";
+import Error from "./components/Error.vue";
+
+useHead({
+    title: "Error",
+});
 
 const props = defineProps({
     error: Object as () => NuxtError,
@@ -7,5 +12,5 @@ const props = defineProps({
 </script>
 
 <template>
-    <Error :error="error" />
+    <Error v-if="error" :error="error" />
 </template>

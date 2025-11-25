@@ -8,7 +8,7 @@ const props = defineProps<Props>();
 
 <template>
     <div class="info-card flex-column gap-s">
-        <h3 v-if="title" class="card-title text-s">{{ title }}</h3>
+        <h3 v-if="title" class="card-title text-s text-weight-700">{{ title }}</h3>
         <slot />
     </div>
 </template>

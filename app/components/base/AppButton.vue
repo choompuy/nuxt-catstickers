@@ -3,10 +3,12 @@ interface Props {
     variant?: "primary" | "secondary" | "transparent" | "text";
     type?: "button" | "submit" | "reset" | "link";
     size?: "small" | "large";
+    textDecoration?: "none" | "underline";
     href?: string;
     label?: string;
     active?: boolean;
     fill?: boolean;
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -19,6 +21,7 @@ const attributes = computed(() => ({
     class: "app-button flex-row gap-s",
     "data-variant": props.variant || "primary",
     "data-size": props.size,
+    style: { textDecoration: props.textDecoration || "none" },
 }));
 </script>
 
@@ -27,7 +30,15 @@ const attributes = computed(() => ({
         <NuxtLink v-if="type === 'link'" :to="href" v-bind="attributes" :class="{ active: active }">
             <slot />
         </NuxtLink>
-        <button v-else :type="type || 'button'" @click="emit('click', $event)" v-bind="attributes" :aria-label="label" :class="{ active: active }">
+        <button
+            v-else
+            :type="type || 'button'"
+            @click="emit('click', $event)"
+            v-bind="attributes"
+            :aria-label="label"
+            :class="{ active: active }"
+            :disabled="disabled"
+        >
             <slot />
         </button>
     </div>
@@ -37,7 +48,7 @@ const attributes = computed(() => ({
 .app-button-wrapper {
     display: flex;
     border-radius: 0.5rem;
-
+    text-decoration: dashed;
     &.fill {
         width: 100%;
 
@@ -51,16 +62,21 @@ const attributes = computed(() => ({
 .app-button {
     width: auto;
     min-height: $button-height;
-    padding-inline: 0.75rem;
+    padding-inline: 0.375rem;
     border: 2px $border-1;
     border-radius: inherit;
     transition: $transition-fancy;
+
+    &:disabled {
+        opacity: 0.6;
+        pointer-events: none;
+    }
 }
 
 .app-button[data-variant="button"] {
     color: $surface-0;
     background-color: $onSurface-0;
-    transition-property: transform, box-shadow;
+    transition-property: opacity, transform, box-shadow;
 
     &:hover {
         transform: translate3d(-2px, -2px, 0);
@@ -74,9 +90,9 @@ const attributes = computed(() => ({
 .app-button[data-variant="primary"] {
     color: $surface-2;
     background-color: $onSurface-0;
-    transition-property: color, background-color, transform;
+    transition-property: opacity, color, background-color, transform;
     border-color: $secondary-text-color;
-    
+
     &:hover,
     &.active {
         background-color: $border-color-2;
@@ -90,7 +106,7 @@ const attributes = computed(() => ({
 .app-button[data-variant="secondary"] {
     color: $onSurface-0;
     background-color: $surface-1;
-    transition-property: background-color, transform;
+    transition-property: opacity, background-color, transform;
 
     &:hover,
     &.active {
@@ -105,7 +121,7 @@ const attributes = computed(() => ({
 .app-button[data-variant="transparent"] {
     color: $border-color-1;
     background-color: transparent;
-    transition-property: color, background-color, transform;
+    transition-property: opacity, color, background-color, transform;
 
     &:hover,
     &.active {
@@ -126,7 +142,7 @@ const attributes = computed(() => ({
     transition-property: opacity, transform;
 
     &:hover,
-    &:active {
+    &.active {
         opacity: 0.6;
     }
 
@@ -137,7 +153,7 @@ const attributes = computed(() => ({
 
 .app-button[data-size="small"] {
     min-height: $button-height-small;
-    padding-inline: 0.5rem;
+    padding-inline: 0.125rem;
 }
 
 .app-button[data-size="large"] {

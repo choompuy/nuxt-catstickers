@@ -6,9 +6,9 @@ import Rating from "~/components/base/Rating.vue";
 import Skeleton from "~/components/base/Skeleton.vue";
 import Error from "~/components/Error.vue";
 import FullImageViewer from "~/components/FullImageViewer.vue";
+import CatPreview from "~/components/CatPreview.vue";
 
 const route = useRoute();
-const router = useRouter();
 
 const {
     data: cat,
@@ -16,7 +16,6 @@ const {
     error,
 } = await useFetch(`/api/cat/${route.params.id}`, {
     lazy: true,
-    default: () => null,
 });
 
 const { cats, loading, loadCats } = useCats();
@@ -32,14 +31,6 @@ const catBreed = computed(() => {
 });
 const breedId = computed(() => catBreed.value?.id);
 const isFullVisible = ref(false);
-
-const goBackOrHome = () => {
-    if (window.history.length > 1) {
-        router.back();
-    } else {
-        router.push("/");
-    }
-};
 
 useHead({
     title: catBreed.value?.name || "Cat",
@@ -61,9 +52,7 @@ const handleLoadMore = async () => {
 </script>
 
 <template>
-    <AppButton label="Back" @click="goBackOrHome()" variant="secondary" size="small">
-        <IconsArrowLeft />
-    </AppButton>
+    <GoBackButton />
 
     <div v-if="pending" class="grid-loading gap-m">
         <Skeleton class="grid-main" border-radius=".75rem" />
@@ -101,11 +90,15 @@ const handleLoadMore = async () => {
                     />
                 </div>
                 <div class="image-actions flex-row gap-s text-s">
-                    <AppButton @click="handleCopy(cat.url)" variant="secondary" size="small">
+                    <AppButton :href="`/sticker/${route.params.id}`" type="link" variant="secondary">
+                        <p>Make sticker</p>
+                        <IconsSticker />
+                    </AppButton>
+                    <AppButton @click="handleCopy(cat.url)" variant="secondary">
                         <p>Copy URL</p>
                         <IconsCopy />
                     </AppButton>
-                    <AppButton @click="isFullVisible = true" variant="secondary" size="small">
+                    <AppButton @click="isFullVisible = true" variant="secondary">
                         <p>Expand</p>
                         <IconsExpand />
                     </AppButton>
@@ -115,15 +108,15 @@ const handleLoadMore = async () => {
             <AppCard title="Image">
                 <ul class="list">
                     <li>
-                        <p><strong>Width:</strong></p>
+                        <p class="text-weight-600">Width:</p>
                         <p>{{ cat.width }}</p>
                     </li>
                     <li>
-                        <p><strong>Height:</strong></p>
+                        <p class="text-weight-600">Height:</p>
                         <p>{{ cat.height }}</p>
                     </li>
                     <li>
-                        <p><strong>URL:</strong></p>
+                        <p class="text-weight-600">URL:</p>
                         <NuxtLink class="text-overflow" :to="cat.url" target="_blank">{{ cat.url.replace("https://", "") }}</NuxtLink>
                     </li>
                 </ul>
@@ -159,31 +152,23 @@ const handleLoadMore = async () => {
                 </AppCard>
 
                 <AppCard class="cat-info">
-                    <h2 class="text-l">{{ catBreed.name }}</h2>
+                    <h2 class="text-l text-weight-800">{{ catBreed.name }}</h2>
                     <p class="breed-description">{{ catBreed.description }}</p>
                     <ul class="list">
                         <li>
-                            <p>
-                                <strong>Origin:</strong>
-                            </p>
+                            <p class="text-weight-600">Origin:</p>
                             <p>{{ catBreed.origin }} ({{ catBreed.country_code }})</p>
                         </li>
                         <li>
-                            <p>
-                                <strong>Weight:</strong>
-                            </p>
+                            <p class="text-weight-600">Weight:</p>
                             <p>{{ catBreed.weight.metric }} kg</p>
                         </li>
                         <li>
-                            <p>
-                                <strong>Lifespan:</strong>
-                            </p>
+                            <p class="text-weight-600">Lifespan:</p>
                             <p>{{ catBreed.life_span }} years</p>
                         </li>
                         <li>
-                            <p>
-                                <strong>Temperament:</strong>
-                            </p>
+                            <p class="text-weight-600">Temperament:</p>
                             <p>
                                 {{ catBreed.temperament }}
                             </p>

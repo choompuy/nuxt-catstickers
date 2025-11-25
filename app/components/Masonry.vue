@@ -109,10 +109,10 @@ const fillViewportIfNeeded = async () => {
 
         const container = masonryRef.value.getBoundingClientRect();
         const containerBottom = container.bottom + window.scrollY;
-        const viewportBottom = window.scrollY + window.innerHeight;
+        const viewportBottom = window.scrollY + window.innerHeight * props.loadThreshold;
 
         // stop if container already fills threshold or currently loading (wait for items)
-        if (containerBottom > viewportBottom * (props.loadThreshold ?? 1.5) || isLoading.value) break;
+        if (containerBottom > viewportBottom || isLoading.value) break;
 
         isLoading.value = true;
         emit("loadMore");

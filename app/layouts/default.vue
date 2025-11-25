@@ -1,43 +1,23 @@
 <script setup lang="ts">
-import AppButton from "~/components/base/AppButton.vue";
-import Filter from "~/components/Filter.vue";
-import ActiveFilters from "~/components/ActiveFilters.vue";
+import Header from "~/components/Header.vue";
+import type { CatBreed } from "~/types/cat";
 
 const route = useRoute();
 
-const { breeds } = useBreeds();
-provide("breeds", breeds);
+const { breeds, fetchBreeds } = useBreeds();
+const providedBreeds = ref<CatBreed[]>([]);
+provide("breeds", providedBreeds);
 
-const goHome = async () => {
-    if (route.path === "/") {
-        if (window.scrollY >= 100) window.scrollTo({ top: 0 });
-        else {
-            if (Object.keys(route.query).length > 0) await navigateTo({ query: {} });
-            else window.location.reload();
-        }
-    } else {
-        await navigateTo("/");
+watchEffect(async () => {
+    if (route.path === "/" && providedBreeds.value.length === 0) {
+        await fetchBreeds();
+        providedBreeds.value = breeds.value;
     }
-};
+});
 </script>
 
 <template>
-    <header>
-        <div class="header-content flex-column gap-s">
-            <div class="header-content__start flex-row gap-m">
-                <AppButton class="logo" @click="goHome" variant="text" size="small">
-                    <IconsCat />
-                    <h1 class="text-l text-weight-600">CatStickers</h1>
-                </AppButton>
-
-                <div v-if="$route.path === '/'" class="flex-row gap-s">
-                    <Filter />
-                </div>
-            </div>
-
-            <ActiveFilters v-if="route.path === '/'" />
-        </div>
-    </header>
+    <Header />
 
     <main class="flex-column gap-m">
         <slot />
@@ -45,14 +25,10 @@ const goHome = async () => {
 </template>
 
 <style lang="scss" scoped>
-.header-content {
-    width: 100%;
+main {
     max-width: $page-max-width;
     margin-inline: auto;
-    padding: 0.5rem 1rem;
-
-    &__start {
-        justify-content: space-between;
-    }
+    padding: 1em;
+    padding-bottom: 2.5rem;
 }
 </style>

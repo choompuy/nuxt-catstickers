@@ -1,14 +1,15 @@
 import type { CatBreed } from "~/types/cat";
+import { apiRequest } from "~~/server/utils/apiClient";
+
+const apiUrl = process.env.API_URL || "";
+const apiKey = process.env.API_KEY || "";
 
 export default defineEventHandler(async (event) => {
-    const apiKey = process.env.API_KEY || "";
-
-    const res = await $fetch<CatBreed[]>(`${process.env.API_URL}/breeds`, {
-        method: "GET",
-        headers: {
-            "x-api-key": apiKey,
+    return await apiRequest<CatBreed[]>(
+        `${apiUrl}/breeds`,
+        {
+            headers: { "x-api-key": apiKey },
         },
-    });
-
-    return res;
+        event
+    );
 });

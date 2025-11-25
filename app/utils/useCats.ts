@@ -27,9 +27,9 @@ export const useCats = () => {
 
         if (controller) controller.abort("Abort: New loadCats request");
         controller = new AbortController();
-        
+
         loading.value = true;
-        
+
         try {
             const query: CatQuery = {
                 limit: 10,
@@ -40,7 +40,7 @@ export const useCats = () => {
 
             const data = await $fetch<Cat[]>("/api/cats", { query, signal: controller.signal });
 
-            if (!data || data.length === 0) {
+            if (!data || !data.length) {
                 hasMore.value = false;
                 return;
             }
@@ -53,6 +53,11 @@ export const useCats = () => {
 
             page.value++;
         } catch (error: any) {
+            if (error?.status === 429) {
+                console.warn("API rate limit hit, try again later");
+                hasMore.value = false;
+                return;
+            }
             console.warn(error);
         } finally {
             loading.value = false;

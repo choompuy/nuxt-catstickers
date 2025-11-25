@@ -84,7 +84,7 @@ const handleMouseLeave = () => {
                 <span class="action-show">
                     <IconsArrowLeft />
                 </span>
-                <AppButton class="action-hide" variant="primary" size="small">
+                <AppButton class="action-hide" variant="primary">
                     <p class="text-s text-weight-600">Get random cats</p>
                 </AppButton>
             </div>

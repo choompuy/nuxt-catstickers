@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CatPreview from "~/components/CatPreview.vue";
 import Masonry from "~/components/Masonry.vue";
 
 useHead({

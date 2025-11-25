@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { CatBreed } from "~/types/cat";
-import AppButton from "./base/AppButton.vue";
-import AppCheckbox from "./base/AppCheckbox.vue";
-import AppInput from "./base/AppInput.vue";
-import AppTag from "./base/AppTag.vue";
+import AppButton from "~/components/base/AppButton.vue";
+import AppCheckbox from "~/components/base/AppCheckbox.vue";
+import AppInput from "~/components/base/AppInput.vue";
+import AppTag from "~/components/base/AppTag.vue";
 
 const route = useRoute();
 
@@ -73,7 +73,7 @@ useClickOutside(containerRef, close, modalVisible);
 
 <template>
     <div ref="container" class="filter-container flex-column">
-        <AppButton :active="modalVisible" @click="modalVisible = !modalVisible" size="small" variant="secondary">
+        <AppButton :active="modalVisible" @click="modalVisible = !modalVisible" variant="secondary" :disabled="breeds.length === 0">
             <p>Filter</p>
             <IconsFilter />
         </AppButton>
@@ -86,7 +86,7 @@ useClickOutside(containerRef, close, modalVisible);
                     <div class="breeds-control flex-row">
                         <p class="text-s">Breeds ({{ selectedBreeds.length }}/{{ breeds.length }})</p>
 
-                        <AppButton class="text-s" @click="toggleSelectAll" size="small" variant="secondary">
+                        <AppButton class="text-s" @click="toggleSelectAll" variant="secondary">
                             {{ selectedBreeds.length === breeds.length ? "Deselect All" : "Select All" }}
                         </AppButton>
                     </div>
@@ -110,8 +110,8 @@ useClickOutside(containerRef, close, modalVisible);
                     </div>
 
                     <div class="flex-row gap-s">
-                        <AppButton @click="selectedBreeds = []" variant="secondary" size="small" fill>Reset</AppButton>
-                        <AppButton @click="applyFilter" variant="primary" size="small" fill>Apply</AppButton>
+                        <AppButton @click="selectedBreeds = []" variant="secondary" fill>Reset</AppButton>
+                        <AppButton @click="applyFilter" variant="primary" fill>Apply</AppButton>
                     </div>
                 </div>
             </div>
