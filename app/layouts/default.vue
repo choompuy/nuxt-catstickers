@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Header from "~/components/Header.vue";
-import type { CatBreed } from "~/types/cat";
+import type { CatBreed } from "#shared/types/cat";
 
 const route = useRoute();
 

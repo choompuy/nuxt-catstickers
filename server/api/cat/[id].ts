@@ -1,5 +1,5 @@
 import { defineEventHandler, getRouterParam } from "h3";
-import type { Cat } from "~/types/cat";
+import type { Cat } from "#shared/types/cat";
 import { apiRequest } from "~~/server/utils/apiClient";
 
 const apiUrl = process.env.API_URL || "";

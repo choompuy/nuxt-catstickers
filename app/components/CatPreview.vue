@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Cat } from "~/types/cat";
+import type { Cat } from "#shared/types/cat";
 import AppImage from "~/components/base/AppImage.vue";
 
 interface Props {

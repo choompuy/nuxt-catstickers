@@ -57,7 +57,7 @@ watch(
 
         <template #controls>
             <Transition name="fade">
-                <AppButton v-if="scale !== 1" @click="reset" variant="transparent">
+                <AppButton v-if="scale !== 1" @click="reset" variant="transparent" hint="Reset zoom" hint-pos="left" aria-label="Reset zoom" iconOnly>
                     <IconsArrowCircle />
                 </AppButton>
             </Transition>

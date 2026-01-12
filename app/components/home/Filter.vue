@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatBreed } from "~/types/cat";
+import type { CatBreed } from "#shared/types/cat";
 import AppButton from "~/components/base/AppButton.vue";
 import AppCheckbox from "~/components/base/AppCheckbox.vue";
 import AppInput from "~/components/base/AppInput.vue";

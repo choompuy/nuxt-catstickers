@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CatBreed } from "~/types/cat";
+import type { CatBreed } from "#shared/types/cat";
 import AppTag from "~/components/base/AppTag.vue";
 
 const route = useRoute();

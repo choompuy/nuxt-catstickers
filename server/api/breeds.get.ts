@@ -1,4 +1,4 @@
-import type { CatBreed } from "~/types/cat";
+import type { CatBreed } from "#shared/types/cat";
 import { apiRequest } from "~~/server/utils/apiClient";
 
 const apiUrl = process.env.API_URL || "";

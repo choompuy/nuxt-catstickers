@@ -52,7 +52,10 @@ const handleLoadMore = async () => {
 </script>
 
 <template>
-    <GoBackButton />
+    <div class="flex-row gap-m">
+        <GoBackButton />
+        <h2 v-if="cat" class="text-l">{{ catBreed?.name || cat.id }}</h2>
+    </div>
 
     <div v-if="pending" class="grid-loading gap-m">
         <Skeleton class="grid-main" border-radius=".75rem" />
@@ -151,8 +154,7 @@ const handleLoadMore = async () => {
                     </ul>
                 </AppCard>
 
-                <AppCard class="cat-info">
-                    <h2 class="text-l text-weight-800">{{ catBreed.name }}</h2>
+                <AppCard class="cat-info" title="Description">
                     <p class="breed-description">{{ catBreed.description }}</p>
                     <ul class="list">
                         <li>

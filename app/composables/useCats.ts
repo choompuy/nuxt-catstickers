@@ -1,6 +1,5 @@
-import { ref } from "vue";
-import type { Cat } from "~/types/cat";
-import type { CatQuery } from "~/types/catQuery";
+import type { Cat } from "#shared/types/cat";
+import type { CatQuery } from "#shared/types/catQuery";
 
 export const useCats = () => {
     const cats = ref<Cat[]>([]);

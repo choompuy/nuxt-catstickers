@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from "vue";
-import type { Cat } from "~/types/cat";
+import type { Cat } from "#shared/types/cat";
 
 interface Props {
     items: Cat[];

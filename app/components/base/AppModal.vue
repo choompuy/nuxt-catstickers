@@ -41,7 +41,7 @@ useKeyDown(["Escape"], close, visible);
                 </div>
 
                 <div class="controls flex-column gap-s">
-                    <AppButton @click="close" variant="transparent">
+                    <AppButton @click="close" variant="transparent" hint="Close" hint-pos="left" aria-label="Close" iconOnly>
                         <IconsClose />
                     </AppButton>
 

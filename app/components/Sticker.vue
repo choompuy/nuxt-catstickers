@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { CatQuery } from "~/types/catQuery";
-import type { Cat } from "~/types/cat";
+import type { CatQuery } from "#shared/types/catQuery";
+import type { Cat } from "#shared/types/cat";
 import AppButton from "./base/AppButton.vue";
 import AppImage from "./base/AppImage.vue";
 

@@ -1,13 +1,19 @@
 <script setup lang="ts">
+import type { AppButtonVariant } from "~/types/appButton";
+
 interface Props {
-    variant?: "primary" | "secondary" | "transparent" | "text";
+    variant?: AppButtonVariant;
     type?: "button" | "submit" | "reset" | "link";
     size?: "small" | "large";
     textDecoration?: "none" | "underline";
     href?: string;
-    label?: string;
+    title?: string;
+    ariaLabel?: string;
+    hint?: string;
+    hintPos?: "top" | "bottom" | "left" | "right";
     active?: boolean;
     fill?: boolean;
+    iconOnly?: boolean;
     disabled?: boolean;
 }
 
@@ -21,34 +27,31 @@ const attributes = computed(() => ({
     class: "app-button flex-row gap-s",
     "data-variant": props.variant || "primary",
     "data-size": props.size,
+    "data-icon-only": props.iconOnly,
+    "aria-label": props.ariaLabel,
+    title: props.title,
     style: { textDecoration: props.textDecoration || "none" },
 }));
 </script>
 
 <template>
     <div class="app-button-wrapper" :class="{ fill: fill }">
-        <NuxtLink v-if="type === 'link'" :to="href" v-bind="attributes" :class="{ active: active }">
+        <NuxtLink v-if="type === 'link'" :to="href" v-bind="attributes">
             <slot />
         </NuxtLink>
-        <button
-            v-else
-            :type="type || 'button'"
-            @click="emit('click', $event)"
-            v-bind="attributes"
-            :aria-label="label"
-            :class="{ active: active }"
-            :disabled="disabled"
-        >
+        <button v-else :type="type || 'button'" @click="emit('click', $event)" v-bind="attributes" :class="{ active: active }" :disabled="disabled">
             <slot />
         </button>
+        <div class="hint text-s" :data-hint-pos="hintPos || 'top'" v-if="hint">{{ hint }}</div>
     </div>
 </template>
 
 <style lang="scss" scoped>
 .app-button-wrapper {
+    position: relative;
     display: flex;
     border-radius: 0.5rem;
-    text-decoration: dashed;
+
     &.fill {
         width: 100%;
 
@@ -57,12 +60,63 @@ const attributes = computed(() => ({
             justify-content: center;
         }
     }
+
+    .hint {
+        position: absolute;
+        place-self: center;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        border: 2px $border-1;
+        background-color: $surface-0;
+        color: $onSurface-0;
+        text-wrap: nowrap;
+        opacity: 0;
+        transition: opacity $transition-pop;
+        transition-delay: 0s;
+        pointer-events: none;
+        z-index: 10;
+
+        &[data-hint-pos="top"] {
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            margin-bottom: 0.25rem;
+        }
+
+        &[data-hint-pos="bottom"] {
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 0.25rem;
+        }
+
+        &[data-hint-pos="left"] {
+            top: 0;
+            bottom: 0;
+            right: 100%;
+            margin-right: 0.25rem;
+        }
+
+        &[data-hint-pos="right"] {
+            top: 0;
+            bottom: 0;
+            left: 100%;
+            margin-left: 0.25rem;
+        }
+    }
+
+    &:hover {
+        .hint {
+            opacity: 1;
+            transition-delay: 0.5s;
+        }
+    }
 }
 
 .app-button {
     width: auto;
-    min-height: $button-height;
-    padding-inline: 0.375rem;
+    height: $button-height;
+    padding-inline: 0.5rem;
     border: 2px $border-1;
     border-radius: inherit;
     transition: $transition-fancy;
@@ -135,15 +189,13 @@ const attributes = computed(() => ({
 }
 
 .app-button[data-variant="text"] {
-    padding: 0;
     border: none;
-    border-radius: 0;
     background-color: transparent;
-    transition-property: opacity, transform;
+    transition-property: background-color, transform;
 
     &:hover,
     &.active {
-        opacity: 0.6;
+        background-color: $border-color-1;
     }
 
     &:active {
@@ -152,12 +204,27 @@ const attributes = computed(() => ({
 }
 
 .app-button[data-size="small"] {
-    min-height: $button-height-small;
-    padding-inline: 0.125rem;
+    height: $button-height-small;
+    padding-inline: 0.375rem;
 }
 
 .app-button[data-size="large"] {
-    min-height: $button-height-large;
-    padding-inline: 1rem;
+    height: $button-height-large;
+    padding-inline: 0.75rem;
+}
+
+.app-button[data-icon-only="true"] {
+    justify-content: center;
+    align-items: center;
+    width: $button-height;
+    padding: 0;
+
+    &[data-size="small"] {
+        width: $button-height-small;
+    }
+
+    &[data-size="large"] {
+        width: $button-height-large;
+    }
 }
 </style>

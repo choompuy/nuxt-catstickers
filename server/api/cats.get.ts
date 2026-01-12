@@ -1,5 +1,5 @@
-import type { Cat } from "~/types/cat";
-import type { CatQuery } from "~/types/catQuery";
+import type { Cat } from "#shared/types/cat";
+import type { CatQuery } from "#shared/types/catQuery";
 import { apiRequest } from "~~/server/utils/apiClient";
 
 const apiUrl = process.env.API_URL || "";

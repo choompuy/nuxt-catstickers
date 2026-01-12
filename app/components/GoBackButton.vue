@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import AppButton from '~/components/base/AppButton.vue';
-import ArrowLeft from './icons/ArrowLeft.vue';
+import AppButton from "./base/AppButton.vue";
 
 const router = useRouter();
 
@@ -14,7 +13,9 @@ const goBackOrHome = () => {
 </script>
 
 <template>
-    <AppButton label="Back" @click="goBackOrHome()" variant="secondary">
-        <ArrowLeft />
+    <AppButton @click="goBackOrHome()" variant="secondary" hint="Go back" hint-pos="bottom" aria-label="Back" iconOnly>
+        <IconsArrowLeft />
     </AppButton>
 </template>
+
+<style lang="scss" scoped></style>

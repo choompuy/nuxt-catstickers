@@ -1,4 +1,4 @@
-import type { CatBreed } from "~/types/cat";
+import type { CatBreed } from "#shared/types/cat";
 
 export function useBreeds() {
     const breeds = ref<CatBreed[]>([]);
