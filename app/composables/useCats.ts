@@ -1,7 +1,7 @@
 import type { Cat } from "#shared/types/cat";
 import type { CatQuery } from "#shared/types/catQuery";
 
-export const useCats = () => {
+export function useCats() {
     const cats = ref<Cat[]>([]);
     const loading = ref(false);
     const page = ref(0);

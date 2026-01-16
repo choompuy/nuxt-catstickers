@@ -1,8 +1,11 @@
-import { Canvas, FabricImage, Point } from "fabric";
+import { Canvas, FabricImage, Point, type TPointerEvent } from "fabric";
 
 const PADDING = 80;
 let isPanning = false;
 let lastPos = new Point(0, 0);
+let pinchStartDist = 0;
+let pinchStartZoom = 1;
+let lastTouchCount = 0;
 
 function clampViewport(canvas: Canvas, image: FabricImage) {
     const zoom = canvas.getZoom();
@@ -27,41 +30,86 @@ function clampViewport(canvas: Canvas, image: FabricImage) {
 }
 
 export const canvasPanZoom = {
-    onMouseDown(e: any, canvas: Canvas) {
+    onMouseDown(e: TPointerEvent, canvas: Canvas) {
         isPanning = true;
         canvas.setCursor("grabbing");
         lastPos = canvas.getViewportPoint(e);
     },
 
-    onMouseMove(e: any, canvas: Canvas, img: FabricImage | null) {
+    onMouseMove(e: TPointerEvent, canvas: Canvas, img: FabricImage | null) {
         if (!isPanning) return;
 
         canvas.setCursor("grabbing");
         const p = canvas.getViewportPoint(e);
-        const dx = p.x - lastPos.x;
-        const dy = p.y - lastPos.y;
-
-        canvas.relativePan(new Point(dx, dy));
+        canvas.relativePan(new Point(p.x - lastPos.x, p.y - lastPos.y));
         lastPos = p;
 
         if (img) clampViewport(canvas, img);
         canvas.requestRenderAll();
     },
 
-    onMouseUp(canvas: Canvas) {
-        isPanning = false;
+    onTouchMove(e: TPointerEvent, canvas: Canvas, img: FabricImage | null) {
+        if (!(e instanceof TouchEvent)) return;
+
+        const touchCount = e.touches.length;
+
+        if (touchCount !== lastTouchCount) {
+            pinchStartDist = 0;
+            pinchStartZoom = canvas.getZoom();
+            lastPos = canvas.getViewportPoint(e);
+        }
+
+        lastTouchCount = touchCount;
+
+        if (touchCount === 1 && e.touches[0]) {
+            const p = canvas.getViewportPoint(e);
+
+            if (lastPos) canvas.relativePan(new Point(p.x - lastPos.x, p.y - lastPos.y));
+            lastPos = p;
+        } else if (touchCount === 2 && e.touches[0] && e.touches[1]) {
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+
+            const dist = getTouchDistance(t1, t2);
+            const center = getTouchCenter(t1, t2);
+
+            if (pinchStartDist === 0) {
+                pinchStartDist = dist;
+                pinchStartZoom = canvas.getZoom();
+                lastPos = center;
+                return;
+            }
+
+            const zoom = pinchStartZoom * (dist / pinchStartDist);
+            canvas.zoomToPoint(center, zoom);
+
+            if (lastPos) canvas.relativePan(new Point(center.x - lastPos.x, center.y - lastPos.y));
+            lastPos = center;
+        }
+
+        if (img) clampViewport(canvas, img);
         canvas.requestRenderAll();
     },
 
-    onMouseWheel(e: any, canvas: Canvas, img: FabricImage | null) {
+    onMouseUp(canvas: Canvas) {
+        pinchStartDist = 0;
+        isPanning = false;
+        lastTouchCount = 0;
+
+        canvas.requestRenderAll();
+    },
+
+    onMouseWheel(e: TPointerEvent, canvas: Canvas, img: FabricImage | null) {
         e.preventDefault();
 
-        const delta = e.deltaY;
-        const zoom = canvas.getZoom();
-        const p = canvas.getViewportPoint(e);
+        if (e instanceof WheelEvent) {
+            const delta = e.deltaY;
+            const zoom = canvas.getZoom();
+            const p = canvas.getViewportPoint(e);
 
-        let newZoom = zoom * (delta > 0 ? 0.95 : 1.05);
-        canvas.zoomToPoint(p, Math.max(0.01, Math.min(10, newZoom)));
+            let newZoom = zoom * (delta > 0 ? 0.95 : 1.05);
+            canvas.zoomToPoint(p, Math.max(0.01, Math.min(10, newZoom)));
+        }
 
         if (img) clampViewport(canvas, img);
         canvas.requestRenderAll();

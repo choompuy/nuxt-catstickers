@@ -82,7 +82,7 @@ export const canvasLasso = {
             objectCaching: false,
             selectable: true,
             evented: true,
-            fill: "rgba(255, 255, 255, 0.01)",
+            fill: null,
             hoverCursor: "move",
             hasControls: true,
             hasBorders: true,

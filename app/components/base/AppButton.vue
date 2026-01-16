@@ -105,10 +105,12 @@ const attributes = computed(() => ({
         }
     }
 
-    &:hover {
-        .hint {
-            opacity: 1;
-            transition-delay: 0.5s;
+    @media (hover: hover) and (pointer: fine) {
+        &:hover {
+            .hint {
+                opacity: 1;
+                transition-delay: 0.5s;
+            }
         }
     }
 }

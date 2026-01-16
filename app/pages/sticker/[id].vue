@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import AppButton from "~/components/base/AppButton.vue";
 import Skeleton from "~/components/base/Skeleton.vue";
-import GoBackButton from "~/components/GoBackButton.vue";
 import Editor from "~/components/sticker/Editor.vue";
 
 useHead({
@@ -40,7 +38,7 @@ const {
 
 <style scoped lang="scss">
 .sticker-page {
-    width: 100vw;
-    height: 100vh;
+    width: 100dvw;
+    height: 100dvh;
 }
 </style>
