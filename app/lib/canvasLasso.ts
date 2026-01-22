@@ -1,4 +1,4 @@
-import { Canvas, Path, Shadow } from "fabric";
+import { Canvas, Control, Path, Shadow, util } from "fabric";
 
 const strokeColor = "rgba(231, 37, 37, 1)";
 const borderColor = "rgba(255, 255, 255, .6)";
@@ -9,10 +9,6 @@ let points: { x: number; y: number }[] = [];
 let path: Path | null = null;
 
 export const canvasLasso = {
-    invertColor([r, g, b]: [number, number, number]) {
-        return `rgb(${255 - r}, ${255 - g}, ${255 - b})`;
-    },
-
     cancel(canvas: Canvas) {
         drawing = false;
         if (path) {
@@ -96,8 +92,6 @@ export const canvasLasso = {
 
         canvas.remove(path);
         path = null;
-        canvas.add(polygon);
-        canvas.setActiveObject(polygon);
         canvas.requestRenderAll();
 
         return polygon;

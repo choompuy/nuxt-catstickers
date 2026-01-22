@@ -30,11 +30,16 @@ export interface CanvasHandler {
     wheel?: (event: CanvasEvent, c: Canvas) => void;
     undo?: (c: Canvas) => void;
     redo?: (c: Canvas) => void;
+    apply?: (c: Canvas) => void;
 }
 
 export interface CanvasHistoryEntry {
-    undo: () => void;
-    redo: () => void;
+    type: "transform" | "add" | "remove" | "replace" | "lasso";
+    object?: FabricObject;
+    oldObject?: FabricObject;
+    newObject?: FabricObject;
+    before?: any;
+    after?: any;
 }
 
 export type HandlersMap = Record<CanvasModes, CanvasHandler>;

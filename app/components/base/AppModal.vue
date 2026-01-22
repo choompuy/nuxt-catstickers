@@ -23,13 +23,18 @@ const show = () => {
 
 watch(
     () => visible.value,
-    (value) => (value ? show() : close())
+    (value) => (value ? show() : close()),
 );
 
 onDeactivated(close);
 onBeforeUnmount(close);
 
-useKeyDown(["Escape"], close, visible);
+useHotkeys(
+    {
+        "escape": close,
+    },
+    { preventDefault: true, condition: visible },
+);
 </script>
 
 <template>

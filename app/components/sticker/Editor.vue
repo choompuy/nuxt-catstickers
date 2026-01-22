@@ -1,17 +1,9 @@
 <script setup lang="ts">
+import type { CanvasModes } from "~/types/canvas";
 import AppButton from "~/components/base/AppButton.vue";
 import Logo from "~/components/Logo.vue";
-import type { CanvasModes } from "~/types/canvas";
-
 import Grab from "~/components/icons/Grab.vue";
 import Lasso from "~/components/icons/Lasso.vue";
-
-const props = defineProps<{ cat: Cat }>();
-
-const wrapperRef = useTemplateRef<HTMLElement>("canvasWrapper");
-const canvasRef = useTemplateRef<HTMLCanvasElement>("canvas");
-
-const { currentMode, initCanvas, switchMode } = useCanvas();
 
 interface Tool {
     id: string;
@@ -36,11 +28,29 @@ const tools = computed<Tool[]>(() => [
     },
 ]);
 
+const props = defineProps<{ cat: Cat }>();
+
+const wrapperRef = useTemplateRef<HTMLElement>("canvasWrapper");
+const canvasRef = useTemplateRef<HTMLCanvasElement>("canvas");
+
+const { currentMode, history, initCanvas, switchMode, undo, redo, goTo } = useCanvas();
+
 onMounted(async () => {
     if (!wrapperRef.value || !canvasRef.value) return;
 
     initCanvas(wrapperRef.value, canvasRef.value, props.cat.url);
 });
+
+useHotkeys(
+    {
+        "ctrl+z": undo,
+        "ctrl+shift+z": redo,
+        "ctrl+y": redo,
+    },
+    {
+        preventDefault: true,
+    },
+);
 </script>
 
 <template>
@@ -58,11 +68,24 @@ onMounted(async () => {
                 </div>
 
                 <div class="panel flex-row gap-s">
-                    <AppButton variant="text" size="small">Undo</AppButton>
-                    <AppButton variant="text" size="small">Redo</AppButton>
+                    <AppButton variant="text" size="small" @click="undo" :disabled="!history.canUndo">Undo</AppButton>
+                    <AppButton variant="text" size="small" @click="redo" :disabled="!history.canRedo">Redo</AppButton>
                     <AppButton variant="text" size="small">Reset</AppButton>
                     <AppButton variant="text" size="small">Save</AppButton>
                 </div>
+            </div>
+
+            <div class="toolbar__side panel flex-column gap-xs">
+                <AppButton
+                    v-for="(h, i) in history.entries.value"
+                    :active="i === history.index.value"
+                    @click="() => goTo(i)"
+                    variant="text"
+                    size="small"
+                    fill
+                >
+                    {{ h.type }}
+                </AppButton>
             </div>
 
             <div class="toolbar__bottom panel flex-row gap-s">
@@ -112,8 +135,15 @@ onMounted(async () => {
         left: 1rem;
     }
 
+    &__side {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+
     &__bottom {
         position: absolute;
+        align-items: center;
         bottom: 1rem;
         left: 50%;
         transform: translateX(-50%);

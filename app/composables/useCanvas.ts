@@ -23,9 +23,32 @@ export function useCanvas() {
         },
     };
 
-    const history = shallowRef<CanvasHistoryEntry[]>([]);
+    const history = useCanvasHistory(state);
+
     const currentMode = ref<CanvasModes>("panZoom");
     const currentButton = ref<CanvasButton>(0);
+    const objectListeners = new WeakMap<
+        FabricObject | Path,
+        {
+            handlers: {
+                modified: () => void;
+                selected: () => void;
+            };
+            ref: ShallowRef<FabricObject | Path | null>;
+            initialState: any;
+        }
+    >();
+
+    const updateCursors = (mode: CanvasModes) => {
+        if (!state.canvas) return;
+        const { default: def, hover } = CURSOR_MAP[mode] ?? CURSOR_MAP.panZoom;
+        state.canvas.defaultCursor = def;
+        state.canvas.hoverCursor = hover;
+    };
+
+    const showOriginalImage = (show: boolean) => {
+        if (state.image.original) state.image.original.opacity = show ? 0.3 : 0;
+    };
 
     async function initCanvas(wrapperElement: HTMLElement, canvasElement: HTMLCanvasElement, imageUrl: string) {
         state.wrapperEl = wrapperElement;
@@ -39,11 +62,9 @@ export function useCanvas() {
         const [img, clone] = await Promise.all([canvasImage.loadImage(imageUrl), canvasImage.loadImage(imageUrl).then((i) => i.clone())]);
 
         [img, clone].forEach((i) => {
-            if (!state.canvas) return;
-
             i.selectable = false;
             canvasImage.scaleToFitImage(state.canvas!, i);
-            state.canvas.add(i);
+            state.canvas!.add(i);
         });
 
         clone.opacity = 0;
@@ -54,93 +75,42 @@ export function useCanvas() {
         };
 
         switchMode(currentMode.value);
+        handleResize();
 
         state.canvas.on("mouse:down", handleMouseDown);
         state.canvas.on("mouse:move", handleMouseMove);
         state.canvas.on("mouse:up", handleMouseUp);
         state.canvas.on("mouse:wheel", handleMouseWheel);
         window.addEventListener("resize", handleResize);
-
-        handleResize();
     }
 
-    const updateCursors = (mode: CanvasModes) => {
-        if (!state.canvas) return;
-        const { default: def, hover } = CURSOR_MAP[mode] ?? CURSOR_MAP.panZoom;
-        state.canvas.defaultCursor = def;
-        state.canvas.hoverCursor = hover;
-    };
-
-    const showOriginalImage = (show: boolean) => {
-        if (state.image.original) state.image.original.opacity = show ? 0.3 : 0;
-    };
-
     function switchMode(mode: CanvasModes) {
-        currentMode.value = mode;
-        if (!state.canvas) return;
+        if (!state.canvas || mode === currentMode.value) return;
 
         const isLasso = mode === "lasso";
         showOriginalImage(isLasso);
 
         if (isLasso && state.entities.lasso.value) {
             state.canvas.setActiveObject(state.entities.lasso.value);
-        } else if (state.entities.lasso) {
+        } else {
             state.canvas.discardActiveObject();
         }
 
         state.canvas.skipTargetFind = mode === "panZoom";
         updateCursors(mode);
         state.canvas.requestRenderAll();
+        currentMode.value = mode;
     }
 
-    function attachObjectListeners(obj: Path, ref: ShallowRef<FabricObject | null>) {
-        ref.value = obj;
-
-        const initialState = {
-            left: obj.left,
-            top: obj.top,
-            scaleX: obj.scaleX,
-            scaleY: obj.scaleY,
-            angle: obj.angle,
-        };
-
-        const updateInitialState = () =>
-            Object.assign(initialState, {
-                left: obj.left,
-                top: obj.top,
-                scaleX: obj.scaleX,
-                scaleY: obj.scaleY,
-                angle: obj.angle,
-            });
-
-        const updateRef = () => {
-            ref.value = obj;
-        };
-
-        obj.on("modified", () => {
-            updateRef();
-            updateInitialState();
-        });
-        obj.on("selected", updateRef);
-
-        (obj as any).__undoTransform = () => {
-            obj.set(initialState);
-            obj.setCoords();
-
-            if (!state.canvas) return;
-            state.canvas.endCurrentTransform();
-            state.canvas.requestRenderAll();
-        };
-    }
-
-    function addObject(obj: FabricObject) {
+    function addObject(obj: FabricObject | Path) {
         if (!state.canvas) return;
         state.canvas.add(obj);
         state.canvas.setActiveObject(obj);
         state.canvas.requestRenderAll();
+        history.push({ type: "add", object: obj });
     }
 
-    function replaceObject(oldObj: FabricObject, newObj: FabricObject) {
+    const replaceObject = (oldObj: FabricObject, newObj: FabricObject) => {
         if (!state.canvas) return;
         const index = state.canvas.getObjects().indexOf(oldObj);
         if (index === -1) return;
@@ -148,14 +118,102 @@ export function useCanvas() {
         state.canvas.remove(oldObj);
         state.canvas.insertAt(index, newObj);
         state.canvas.requestRenderAll();
-    }
+        history.push({ type: "replace", oldObject: oldObj, newObject: newObj });
+    };
 
-    const clearLasso = () => {
+    const attachObjectListeners = (obj: FabricObject | Path, ref: ShallowRef<FabricObject | null>) => {
+        if (objectListeners.has(obj)) {
+            detachObjectListeners(obj);
+        }
+
+        ref.value = obj;
+        let initialState = history.saveState(obj);
+
+        const onModified = () => {
+            const newState = history.saveState(obj);
+            if (JSON.stringify(initialState) === JSON.stringify(newState)) return;
+
+            history.push({
+                type: "transform",
+                object: obj,
+                before: initialState,
+                after: newState,
+            });
+
+            initialState = newState;
+            ref.value = obj;
+
+            const data = objectListeners.get(obj);
+            if (data) data.initialState = initialState;
+        };
+
+        const onSelected = () => {
+            ref.value = obj;
+        };
+
+        const undoTransform = () => {
+            const data = objectListeners.get(obj);
+            if (!data) return;
+
+            history.restoreState(obj, data.initialState);
+            state.canvas?.endCurrentTransform();
+            state.canvas?.requestRenderAll();
+        };
+
+        obj.on("modified", onModified);
+        obj.on("selected", onSelected);
+        (obj as any).__undoTransform = undoTransform;
+
+        objectListeners.set(obj, {
+            handlers: {
+                modified: onModified,
+                selected: onSelected,
+            },
+            ref,
+            initialState,
+        });
+    };
+
+    const detachObjectListeners = (obj: FabricObject) => {
+        const data = objectListeners.get(obj);
+        if (!data) return;
+
+        obj.off("modified", data.handlers.modified);
+        obj.off("selected", data.handlers.selected);
+        delete (obj as any).__undoTransform;
+
+        objectListeners.delete(obj);
+    };
+
+    const addLasso = (path: Path) => {
+        if (!state.canvas || !state.image.active) return;
+
+        state.canvas.add(path);
+        state.canvas.setActiveObject(path);
+        state.image.active.clipPath = path;
+
+        attachObjectListeners(path, state.entities.lasso);
+        showOriginalImage(true);
+    };
+
+    const clearLasso = (needHistory = false) => {
         if (!state.canvas || !state.entities.lasso.value || !state.image.active) return;
 
-        state.canvas.remove(state.entities.lasso.value);
+        const lasso = state.entities.lasso.value;
+        detachObjectListeners(lasso);
+
+        if (needHistory) {
+            history.push({
+                type: "lasso",
+                before: () => addLasso(lasso),
+                after: clearLasso,
+            });
+        }
+
+        state.canvas.remove(lasso);
         state.entities.lasso.value = null;
         state.image.active.clipPath = undefined;
+
         showOriginalImage(false);
     };
 
@@ -170,10 +228,7 @@ export function useCanvas() {
         lasso: {
             down: (event, c) => {
                 if (event.target === state.entities.lasso.value) return;
-
-                if (state.entities.lasso.value) {
-                    clearLasso();
-                }
+                if (state.entities.lasso.value) clearLasso(true);
                 canvasLasso.onMouseDown(event.e, c);
             },
             move: (event, c) => canvasLasso.onMouseMove(event.e, c),
@@ -182,14 +237,15 @@ export function useCanvas() {
                 const path = canvasLasso.onMouseUp(c);
                 if (!path) return;
 
-                attachObjectListeners(path, state.entities.lasso);
-                state.image.active.clipPath = path;
-                showOriginalImage(true);
+                addLasso(path);
+                history.push({
+                    type: "lasso",
+                    before: clearLasso,
+                    after: () => addLasso(path),
+                });
             },
             undo: (c) => {
-                if (state.entities.lasso.value) {
-                    clearLasso();
-                }
+                if (state.entities.lasso.value) clearLasso(true);
                 canvasLasso.cancel(c);
             },
         },
@@ -207,7 +263,7 @@ export function useCanvas() {
         },
     };
 
-    const getHandler = (button: number, mode: CanvasModes) => (button === 1 ? handlers.panZoom : handlers[mode] ?? null);
+    const getHandler = (button: number, mode: CanvasModes) => (button === 1 ? handlers.panZoom : (handlers[mode] ?? null));
 
     const activatePanZoom = (event: CanvasEvent) => {
         if (!state.canvas) return;
@@ -311,6 +367,7 @@ export function useCanvas() {
     function cleanup() {
         window.removeEventListener("resize", handleResize);
         state.canvas?.dispose();
+        history.clear();
         Object.assign(state, INITIAL_STATE);
     }
 
@@ -321,9 +378,13 @@ export function useCanvas() {
         canvas: computed(() => state.canvas),
         currentMode: readonly(currentMode),
         image: readonly(state.image),
+        history: history.exposed,
         initCanvas,
         switchMode,
         addObject,
         replaceObject,
+        undo: history.undo,
+        redo: history.redo,
+        goTo: history.goTo,
     };
 }

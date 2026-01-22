@@ -26,4 +26,8 @@ export const INITIAL_STATE: CanvasState = {
         lasso: shallowRef(null),
         selection: shallowRef(null),
     },
+    input: {
+        button: 0,
+        device: "mouse",
+    },
 };

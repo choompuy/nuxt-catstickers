@@ -67,7 +67,12 @@ const close = () => {
 watch(modalVisible, (value) => (value ? show() : close()));
 
 useBodyScrollLock(modalVisible);
-useKeyDown(["Escape"], close, modalVisible);
+useHotkeys(
+    {
+        "escape": close,
+    },
+    { preventDefault: true, condition: modalVisible },
+);
 useClickOutside(containerRef, close, modalVisible);
 </script>
 
