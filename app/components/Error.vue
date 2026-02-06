@@ -32,7 +32,7 @@ onMounted(() => {
                     </h2>
                 </div>
                 <div class="error-actions text-weight-500">
-                    <AppButton type="link" href="/" variant="secondary">Go back home</AppButton>
+                    <AppButton type="link" href="/" variant="primary">Go back home</AppButton>
                 </div>
             </div>
         </div>
@@ -48,7 +48,7 @@ $inner-color: $surface-3;
     max-width: 400px;
     min-height: 250px;
     margin: auto;
-    background-color: $onSurface-0;
+    background-color: $text-primary;
     border: $border-2;
     border-radius: 1rem;
     overflow: hidden;

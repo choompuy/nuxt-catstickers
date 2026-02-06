@@ -23,7 +23,7 @@ const props = defineProps<Props>();
     overflow: hidden;
 
     .card-title {
-        color: $secondary-text-color;
+        color: $text-secondary;
     }
 }
 </style>

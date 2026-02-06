@@ -227,7 +227,7 @@ $row-height: 120px;
 .no-info {
     justify-content: center;
     align-items: center;
-    color: $secondary-text-color;
+    color: $text-secondary;
 }
 
 .list {

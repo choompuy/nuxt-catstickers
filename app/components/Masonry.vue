@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
     text-align: center;
     margin-inline: auto;
     padding: 1rem;
-    color: $onSurface-0;
+    color: $text-primary;
 }
 
 .masonry {

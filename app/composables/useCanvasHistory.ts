@@ -1,16 +1,23 @@
 import type { FabricObject } from "fabric";
-import type { CanvasHistoryEntry, CanvasState } from "~/types/canvas";
+import type { CanvasHistoryEntry, CanvasHistoryMetadata, CanvasState } from "~/types/canvas";
 
-export function useCanvasHistory(state: CanvasState, maxSize = 50) {
+export function useCanvasHistory(state: CanvasState, maxSize = 200) {
     const entries = shallowRef<CanvasHistoryEntry[]>([]);
     const currentIndex = ref(-1);
 
     const canUndo = computed(() => currentIndex.value >= 0);
     const canRedo = computed(() => currentIndex.value < entries.value.length - 1);
 
-    const push = (entry: CanvasHistoryEntry) => {
+    const push = (entry: CanvasHistoryEntry, meta?: Partial<CanvasHistoryMetadata>) => {
         const newEntries = entries.value.slice(0, currentIndex.value + 1);
-        newEntries.push(entry);
+
+        newEntries.push({
+            ...entry,
+            metadata: {
+                timestamp: Date.now(),
+                ...meta,
+            },
+        });
 
         if (newEntries.length > maxSize) {
             newEntries.shift();
@@ -60,9 +67,7 @@ export function useCanvasHistory(state: CanvasState, maxSize = 50) {
                 }
                 break;
             default:
-                if (entry.before()) {
-                    entry.before();
-                }
+                if (entry.before) entry.before();
         }
         state.canvas.requestRenderAll();
     };
@@ -92,9 +97,7 @@ export function useCanvasHistory(state: CanvasState, maxSize = 50) {
                 }
                 break;
             default:
-                if (entry.after()) {
-                    entry.after();
-                }
+                if (entry.after) entry.after();
         }
         state.canvas.requestRenderAll();
     };
@@ -110,7 +113,6 @@ export function useCanvasHistory(state: CanvasState, maxSize = 50) {
         if (!canRedo.value) return;
         currentIndex.value++;
         const entry = entries.value[currentIndex.value];
-
         if (entry) executeRedo(entry);
     };
 
@@ -142,6 +144,8 @@ export function useCanvasHistory(state: CanvasState, maxSize = 50) {
         currentIndex.value = -1;
     };
 
+    const getEntriesByGroup = (groupId: string) => entries.value.filter((e) => e.metadata?.groupId === groupId);
+
     return {
         push,
         saveState,
@@ -150,6 +154,7 @@ export function useCanvasHistory(state: CanvasState, maxSize = 50) {
         redo,
         goTo,
         clear,
+        getEntriesByGroup,
         exposed: {
             entries: readonly(entries),
             index: readonly(currentIndex),

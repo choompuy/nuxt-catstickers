@@ -31,3 +31,5 @@ export const INITIAL_STATE: CanvasState = {
         device: "mouse",
     },
 };
+
+export const UNDO_TRANSFORM = Symbol("undoTransform");

@@ -10,7 +10,7 @@ const route = useRoute();
     <header>
         <div class="header-content flex-column gap-s">
             <div class="header-content__start flex-row gap-m">
-                <Logo variant="text" />
+                <Logo />
 
                 <div v-if="route.path === '/'" class="flex-row gap-s">
                     <Filter />

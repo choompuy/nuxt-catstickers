@@ -21,6 +21,11 @@ const values = defineModel<any>("values");
 .app-checkbox-label {
     flex-shrink: 0;
     cursor: pointer;
+
+    &:focus-within .app-checkbox__box {
+        outline: 1px solid $text-primary;
+        outline-offset: 2px;
+    }
 }
 
 .app-checkbox {
@@ -45,7 +50,7 @@ const values = defineModel<any>("values");
         border: 1px $border-1;
         border-radius: 0.25rem;
         background-color: transparent;
-        transition: $transition-pop;
+        transition: $transition-fancy;
         transition-property: border-color, opacity, transform;
         overflow: hidden;
     }
@@ -54,17 +59,17 @@ const values = defineModel<any>("values");
         position: absolute;
         content: "";
         inset: 2px;
-        border-radius: 1px;
+        border-radius: 0.125rem;
         transform: scale(0);
-        transition: $transition-pop;
+        transition: $transition-fancy;
         transition-property: background-color, transform;
     }
 
     &__input:checked + &__box {
-        border-color: $onSurface-0;
+        border-color: $text-primary;
 
         &::after {
-            background-color: $onSurface-0;
+            background-color: $text-primary;
             transform: scale(1);
         }
     }

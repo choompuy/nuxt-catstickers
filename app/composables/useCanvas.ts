@@ -1,7 +1,7 @@
 import type { ShallowRef } from "vue";
 import { Canvas, FabricObject, Path } from "fabric";
 import type { CanvasButton, CanvasEvent, CanvasHistoryEntry, CanvasModes, CanvasState, HandlersMap } from "~/types/canvas";
-import { CANVAS_CONFIG, CURSOR_MAP, INITIAL_STATE } from "~/constants/canvas";
+import { CANVAS_CONFIG, CURSOR_MAP, INITIAL_STATE, UNDO_TRANSFORM } from "~/constants/canvas";
 import { canvasImage } from "~/lib/canvasImage";
 import { canvasPanZoom } from "~/lib/canvasPanZoom";
 import { canvasLasso } from "~/lib/canvasLasso";
@@ -27,6 +27,7 @@ export function useCanvas() {
 
     const currentMode = ref<CanvasModes>("panZoom");
     const currentButton = ref<CanvasButton>(0);
+    const currentZoom = ref<number>(0);
     const objectListeners = new WeakMap<
         FabricObject | Path,
         {
@@ -35,7 +36,7 @@ export function useCanvas() {
                 selected: () => void;
             };
             ref: ShallowRef<FabricObject | Path | null>;
-            initialState: any;
+            state: any;
         }
     >();
 
@@ -73,8 +74,9 @@ export function useCanvas() {
             original: clone,
             active: img,
         };
+        currentZoom.value = state.canvas.getZoom();
 
-        switchMode(currentMode.value);
+        updateCursors(currentMode.value);
         handleResize();
 
         state.canvas.on("mouse:down", handleMouseDown);
@@ -102,15 +104,15 @@ export function useCanvas() {
         currentMode.value = mode;
     }
 
-    function addObject(obj: FabricObject | Path) {
+    function addObject(obj: FabricObject | Path, label?: string) {
         if (!state.canvas) return;
         state.canvas.add(obj);
         state.canvas.setActiveObject(obj);
         state.canvas.requestRenderAll();
-        history.push({ type: "add", object: obj });
+        history.push({ type: "add", object: obj }, { label: label || "Add object" });
     }
 
-    const replaceObject = (oldObj: FabricObject, newObj: FabricObject) => {
+    const replaceObject = (oldObj: FabricObject, newObj: FabricObject, label?: string) => {
         if (!state.canvas) return;
         const index = state.canvas.getObjects().indexOf(oldObj);
         if (index === -1) return;
@@ -118,7 +120,19 @@ export function useCanvas() {
         state.canvas.remove(oldObj);
         state.canvas.insertAt(index, newObj);
         state.canvas.requestRenderAll();
-        history.push({ type: "replace", oldObject: oldObj, newObject: newObj });
+
+        history.push({ type: "replace", oldObject: oldObj, newObject: newObj }, { label: label || "Replace object" });
+    };
+
+    const detachObjectListeners = (obj: FabricObject) => {
+        const data = objectListeners.get(obj);
+        if (!data) return;
+
+        obj.off("modified", data.handlers.modified);
+        obj.off("selected", data.handlers.selected);
+        delete (obj as any)[UNDO_TRANSFORM];
+
+        objectListeners.delete(obj);
     };
 
     const attachObjectListeners = (obj: FabricObject | Path, ref: ShallowRef<FabricObject | null>) => {
@@ -127,24 +141,27 @@ export function useCanvas() {
         }
 
         ref.value = obj;
-        let initialState = history.saveState(obj);
+        let lastState = history.saveState(obj);
 
         const onModified = () => {
             const newState = history.saveState(obj);
-            if (JSON.stringify(initialState) === JSON.stringify(newState)) return;
+            if (!hasTransformChanged(lastState, newState)) return;
 
-            history.push({
-                type: "transform",
-                object: obj,
-                before: initialState,
-                after: newState,
-            });
+            history.push(
+                {
+                    type: "transform",
+                    object: obj,
+                    before: lastState,
+                    after: newState,
+                },
+                { label: "Transform" },
+            );
 
-            initialState = newState;
+            lastState = newState;
             ref.value = obj;
 
             const data = objectListeners.get(obj);
-            if (data) data.initialState = initialState;
+            if (data) data.state = lastState;
         };
 
         const onSelected = () => {
@@ -155,14 +172,14 @@ export function useCanvas() {
             const data = objectListeners.get(obj);
             if (!data) return;
 
-            history.restoreState(obj, data.initialState);
+            history.restoreState(obj, data.state);
             state.canvas?.endCurrentTransform();
             state.canvas?.requestRenderAll();
         };
 
         obj.on("modified", onModified);
         obj.on("selected", onSelected);
-        (obj as any).__undoTransform = undoTransform;
+        (obj as any)[UNDO_TRANSFORM] = undoTransform;
 
         objectListeners.set(obj, {
             handlers: {
@@ -170,19 +187,8 @@ export function useCanvas() {
                 selected: onSelected,
             },
             ref,
-            initialState,
+            state: lastState,
         });
-    };
-
-    const detachObjectListeners = (obj: FabricObject) => {
-        const data = objectListeners.get(obj);
-        if (!data) return;
-
-        obj.off("modified", data.handlers.modified);
-        obj.off("selected", data.handlers.selected);
-        delete (obj as any).__undoTransform;
-
-        objectListeners.delete(obj);
     };
 
     const addLasso = (path: Path) => {
@@ -203,11 +209,14 @@ export function useCanvas() {
         detachObjectListeners(lasso);
 
         if (needHistory) {
-            history.push({
-                type: "lasso",
-                before: () => addLasso(lasso),
-                after: clearLasso,
-            });
+            history.push(
+                {
+                    type: "lasso",
+                    before: () => addLasso(lasso),
+                    after: clearLasso,
+                },
+                { label: "Clear lasso" },
+            );
         }
 
         state.canvas.remove(lasso);
@@ -238,11 +247,14 @@ export function useCanvas() {
                 if (!path) return;
 
                 addLasso(path);
-                history.push({
-                    type: "lasso",
-                    before: clearLasso,
-                    after: () => addLasso(path),
-                });
+                history.push(
+                    {
+                        type: "lasso",
+                        before: clearLasso,
+                        after: () => addLasso(path),
+                    },
+                    { label: "Draw lasso" },
+                );
             },
             undo: (c) => {
                 if (state.entities.lasso.value) clearLasso(true);
@@ -254,12 +266,12 @@ export function useCanvas() {
             down: (event, c) => {
                 if (getCanvasInput(event.e).button === 2 && state.entities.lasso.value) {
                     const activeObj = c.getActiveObject();
-                    if (activeObj === state.entities.lasso.value) (activeObj as any).__undoTransform?.();
+                    if (activeObj === state.entities.lasso.value) (activeObj as any)[UNDO_TRANSFORM]?.();
                 }
             },
             move: () => {},
             up: () => {},
-            undo: (c) => (c.getActiveObject() as any)?.__undoTransform?.(),
+            undo: (c) => (c.getActiveObject() as any)?.[UNDO_TRANSFORM]?.(),
         },
     };
 
@@ -285,9 +297,7 @@ export function useCanvas() {
 
     const buttonActions = {
         0: (event: CanvasEvent, handler: any) => activateHandler(event, handler),
-
         1: activatePanZoom,
-
         2: (event: CanvasEvent, handler: any) => {
             if (!state.canvas) return;
             if (state.isActive && currentButton.value !== 1) {
@@ -347,7 +357,9 @@ export function useCanvas() {
     };
 
     const handleMouseWheel = (event: any) => {
-        state.canvas && handlers.panZoom.wheel?.(event, state.canvas);
+        if (!state.canvas) return;
+        handlers.panZoom.wheel?.(event, state.canvas);
+        currentZoom.value = state.canvas.getZoom();
     };
 
     function handleResize() {
@@ -377,6 +389,7 @@ export function useCanvas() {
     return {
         canvas: computed(() => state.canvas),
         currentMode: readonly(currentMode),
+        currentZoom: readonly(currentZoom),
         image: readonly(state.image),
         history: history.exposed,
         initCanvas,

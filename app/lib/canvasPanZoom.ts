@@ -108,7 +108,7 @@ export const canvasPanZoom = {
             const p = canvas.getViewportPoint(e);
 
             let newZoom = zoom * (delta > 0 ? 0.95 : 1.05);
-            canvas.zoomToPoint(p, Math.max(0.01, Math.min(10, newZoom)));
+            canvas.zoomToPoint(p, Math.max(0.01, Math.min(5, newZoom)));
         }
 
         if (img) clampViewport(canvas, img);

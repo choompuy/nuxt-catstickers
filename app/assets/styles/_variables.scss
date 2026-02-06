@@ -11,40 +11,32 @@ $icon-size-large: 2rem;
 
 $filter-blur: blur(1.5rem);
 
-$surface-0: #131313;
-$surface-1: #252525;
-$surface-2: #313131;
-$surface-3: #444444;
+$surface-0: #161616;
+$surface-1: #1d1d1d;
+$surface-2: #232323;
+$surface-3: #343434;
 
-$primary-text-color: #be95ff;
-$secondary-text-color: #a3a3a3;
+$text-primary: #f8f8f8;
+$text-secondary: #adadad;
+$text-muted: #8a8a8a;
 
-$onPrimary: $surface-0;
-$onSurface-0: #f8f8f8;
+$green: #7fae97;
+$orange: #e39a6a;
+$red: #d36a5c;
 
-$purple: #be95ff;
-$green: #51cf01;
-$orange: #ffbc01;
-$red: #e02b17;
-$red-background: color-mix(in srgb, $red 50%, $surface-0 100%);
-
+$border-1: solid $surface-3;
+$border-2: 0.375rem solid $text-primary;
 $backdrop-color: color-mix(in srgb, $surface-0 100%, transparent 50%);
 
 $fade-gradient-to-bottom: linear-gradient(0deg, transparent 0%, $backdrop-color 100%);
 $fade-gradient-to-top: linear-gradient(0deg, $backdrop-color 0%, transparent 100%);
 
-$border-color-1: $surface-3;
-$border-color-2: $secondary-text-color;
-
-$border-1: solid $border-color-1;
-$border-2: 0.375rem solid $onSurface-0;
-
 $box-shadow-1: 4px 4px 0 0 $surface-0;
 $box-shadow-2: 0 0 0.5rem $backdrop-color;
 
 $transition: 0.3s ease;
-$transition-fancy: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-$transition-pop: 0.3s cubic-bezier(0.74, -0.03, 0.05, 1.24);
+$transition-fancy: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+$transition-pop: 0.4s cubic-bezier(0.74, -0.03, 0.05, 1.24);
 
 $breakpoints: (
     "mobile": 600px,

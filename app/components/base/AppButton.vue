@@ -1,232 +1,237 @@
 <script setup lang="ts">
-import type { AppButtonVariant } from "~/types/appButton";
-
 interface Props {
-    variant?: AppButtonVariant;
+    variant?: "primary" | "secondary" | "state" | "outline" | "ghost" | "link" | "danger";
     type?: "button" | "submit" | "reset" | "link";
-    size?: "small" | "large";
-    textDecoration?: "none" | "underline";
+    size?: "small" | "medium" | "large" | "auto";
+    borderRadius?: "small" | "medium" | "large" | "none";
     href?: string;
     title?: string;
     ariaLabel?: string;
-    hint?: string;
-    hintPos?: "top" | "bottom" | "left" | "right";
     active?: boolean;
-    fill?: boolean;
+    fullWidth?: boolean;
     iconOnly?: boolean;
     disabled?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    variant: "primary",
+    type: "button",
+    size: "medium",
+    borderRadius: "medium",
+});
 
 const emit = defineEmits<{
-    (e: "click", event: MouseEvent): void;
+    click: [event: MouseEvent];
 }>();
 
-const attributes = computed(() => ({
-    class: "app-button flex-row gap-s",
-    "data-variant": props.variant || "primary",
+const buttonClass = computed(() => [
+    "app-button",
+    {
+        active: props.active,
+        "full-width": props.fullWidth,
+        "icon-only": props.iconOnly,
+    },
+]);
+
+const buttonAttrs = computed(() => ({
+    class: buttonClass.value,
+    "data-variant": props.variant,
     "data-size": props.size,
-    "data-icon-only": props.iconOnly,
+    "data-border-radius": props.borderRadius,
     "aria-label": props.ariaLabel,
     title: props.title,
-    style: { textDecoration: props.textDecoration || "none" },
 }));
 </script>
 
 <template>
-    <div class="app-button-wrapper" :class="{ fill: fill }">
-        <NuxtLink v-if="type === 'link'" :to="href" v-bind="attributes">
-            <slot />
-        </NuxtLink>
-        <button v-else :type="type || 'button'" @click="emit('click', $event)" v-bind="attributes" :class="{ active: active }" :disabled="disabled">
-            <slot />
-        </button>
-        <div class="hint text-s" :data-hint-pos="hintPos || 'top'" v-if="hint">{{ hint }}</div>
-    </div>
+    <NuxtLink v-if="type === 'link'" :to="href" v-bind="buttonAttrs">
+        <slot />
+    </NuxtLink>
+    <button v-else :type="type" :disabled="disabled" v-bind="buttonAttrs" @click="emit('click', $event)">
+        <slot />
+    </button>
 </template>
 
 <style lang="scss" scoped>
-.app-button-wrapper {
-    position: relative;
-    display: flex;
-    border-radius: 0.5rem;
-
-    &.fill {
-        width: 100%;
-
-        .app-button {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-
-    .hint {
-        position: absolute;
-        place-self: center;
-        padding: 0.125rem 0.25rem;
-        border-radius: 0.25rem;
-        border: 2px $border-1;
-        background-color: $surface-0;
-        color: $onSurface-0;
-        text-wrap: nowrap;
-        opacity: 0;
-        transition: opacity $transition-pop;
-        transition-delay: 0s;
-        pointer-events: none;
-        z-index: 10;
-
-        &[data-hint-pos="top"] {
-            bottom: 100%;
-            left: 0;
-            right: 0;
-            margin-bottom: 0.25rem;
-        }
-
-        &[data-hint-pos="bottom"] {
-            top: 100%;
-            left: 0;
-            right: 0;
-            margin-top: 0.25rem;
-        }
-
-        &[data-hint-pos="left"] {
-            top: 0;
-            bottom: 0;
-            right: 100%;
-            margin-right: 0.25rem;
-        }
-
-        &[data-hint-pos="right"] {
-            top: 0;
-            bottom: 0;
-            left: 100%;
-            margin-left: 0.25rem;
-        }
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-        &:hover {
-            .hint {
-                opacity: 1;
-                transition-delay: 0.5s;
-            }
-        }
-    }
-}
-
 .app-button {
-    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     height: $button-height;
     padding-inline: 0.5rem;
-    border: 2px $border-1;
-    border-radius: inherit;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    font: inherit;
+    cursor: pointer;
     transition: $transition-fancy;
+    transition-property: opacity, background-color, color, border-color;
+    text-wrap: nowrap;
+    text-decoration: none;
 
     &:disabled {
         opacity: 0.6;
         pointer-events: none;
     }
-}
-
-.app-button[data-variant="button"] {
-    color: $surface-0;
-    background-color: $onSurface-0;
-    transition-property: opacity, transform, box-shadow;
-
-    &:hover {
-        transform: translate3d(-2px, -2px, 0);
-    }
-
-    &:active {
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-.app-button[data-variant="primary"] {
-    color: $surface-2;
-    background-color: $onSurface-0;
-    transition-property: opacity, color, background-color, transform;
-    border-color: $secondary-text-color;
-
-    &:hover,
-    &.active {
-        background-color: $border-color-2;
-    }
-
-    &:active {
-        transform: scale(0.98);
-    }
-}
-
-.app-button[data-variant="secondary"] {
-    color: $onSurface-0;
-    background-color: $surface-1;
-    transition-property: opacity, background-color, transform;
-
-    &:hover,
-    &.active {
-        background-color: $border-color-1;
-    }
-
-    &:active {
-        transform: scale(0.98);
-    }
-}
-
-.app-button[data-variant="transparent"] {
-    color: $border-color-1;
-    background-color: transparent;
-    transition-property: opacity, color, background-color, transform;
-
-    &:hover,
-    &.active {
-        color: $onSurface-0;
-        background-color: $border-color-1;
-    }
-
-    &:active {
-        transform: scale(0.98);
-    }
-}
-
-.app-button[data-variant="text"] {
-    border: none;
-    background-color: transparent;
-    transition-property: background-color, transform;
-
-    &:hover,
-    &.active {
-        background-color: $border-color-1;
-    }
-
-    &:active {
-        transform: scale(0.98);
-    }
-}
-
-.app-button[data-size="small"] {
-    height: $button-height-small;
-    padding-inline: 0.375rem;
-}
-
-.app-button[data-size="large"] {
-    height: $button-height-large;
-    padding-inline: 0.75rem;
-}
-
-.app-button[data-icon-only="true"] {
-    justify-content: center;
-    align-items: center;
-    width: $button-height;
-    padding: 0;
 
     &[data-size="small"] {
-        width: $button-height-small;
+        height: $button-height-small;
+        padding-inline: 0.375rem;
     }
 
     &[data-size="large"] {
-        width: $button-height-large;
+        height: $button-height-large;
+        padding-inline: 0.75rem;
+    }
+
+    &[data-size="auto"] {
+        height: auto;
+        padding: 0.25rem 0.5rem;
+    }
+
+    &[data-border-radius="small"] {
+        border-radius: 0.25rem;
+    }
+
+    &[data-border-radius="large"] {
+        border-radius: 0.75rem;
+    }
+
+    &[data-border-radius="none"] {
+        border-radius: 0;
+    }
+
+    &.icon-only {
+        width: $button-height;
+        padding: 0;
+
+        &[data-size="small"] {
+            width: $button-height-small;
+        }
+
+        &[data-size="large"] {
+            width: $button-height-large;
+        }
+    }
+
+    &.full-width {
+        width: 100%;
+    }
+
+    &[data-variant="primary"] {
+        border: 2px solid transparent;
+        background-color: $text-primary;
+        color: $surface-0;
+
+        &:hover {
+            background-color: $text-secondary;
+        }
+
+        &:active {
+            background-color: $text-muted;
+        }
+    }
+
+    &[data-variant="secondary"] {
+        border: 2px $border-1;
+        background-color: $surface-1;
+        color: $text-primary;
+
+        &:hover {
+            background-color: $surface-2;
+        }
+
+        &:active {
+            background-color: $surface-3;
+        }
+
+        &.active {
+            border-color: $text-primary;
+            background-color: $surface-3;
+        }
+    }
+
+    &[data-variant="state"] {
+        color: $text-secondary;
+
+        &:hover {
+            background-color: $surface-2;
+        }
+
+        &:active {
+            background-color: $surface-3;
+        }
+
+        &.active {
+            background-color: $surface-3;
+            color: $text-primary;
+            background-color: $text-primary;
+            color: $surface-0;
+        }
+    }
+    
+    &[data-variant="outline"] {
+        border: 1px solid transparent;
+        background-color: $surface-0;
+        color: $text-primary;
+
+        &:hover {
+            background-color: $surface-2;
+        }
+
+        &:active {
+            background-color: $surface-3;
+        }
+
+        &.active {
+            border-color: $text-primary;
+            background-color: $surface-3;
+        }
+    }
+
+    &[data-variant="ghost"] {
+        border: 2px solid $surface-3;
+        background-color: transparent;
+        color: $surface-3;
+
+        &:hover {
+            background-color: $surface-2;
+            color: $text-secondary;
+        }
+
+        &:active,
+        &.active {
+            background-color: $surface-3;
+            color: $text-primary;
+        }
+    }
+
+    &[data-variant="link"] {
+        color: $text-primary;
+        background-color: transparent;
+
+        &:hover {
+            background-color: $surface-2;
+        }
+
+        &:active {
+            background-color: $surface-3;
+        }
+    }
+
+    &[data-variant="danger"] {
+        $danger-active: color-mix(in srgb, $surface-0 100%, $red 35%);
+        $danger-hover: color-mix(in srgb, $surface-0 100%, $red 15%);
+
+        border: 2px solid $danger-active;
+        color: $red;
+
+        &:hover {
+            background-color: $danger-hover;
+        }
+
+        &:active {
+            background-color: $danger-active;
+        }
     }
 }
 </style>

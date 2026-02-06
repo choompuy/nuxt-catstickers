@@ -18,7 +18,8 @@ html {
 
 body {
     background-color: $surface-0;
-    color: $onSurface-0;
+    color: $text-primary;
+    text-rendering: optimizeLegibility;
 }
 
 #__nuxt {

@@ -3,7 +3,6 @@ import type { CatBreed } from "#shared/types/cat";
 import AppButton from "~/components/base/AppButton.vue";
 import AppCheckbox from "~/components/base/AppCheckbox.vue";
 import AppInput from "~/components/base/AppInput.vue";
-import AppTag from "~/components/base/AppTag.vue";
 
 const route = useRoute();
 
@@ -69,7 +68,7 @@ watch(modalVisible, (value) => (value ? show() : close()));
 useBodyScrollLock(modalVisible);
 useHotkeys(
     {
-        "escape": close,
+        escape: close,
     },
     { preventDefault: true, condition: modalVisible },
 );
@@ -97,26 +96,31 @@ useClickOutside(containerRef, close, modalVisible);
                     </div>
                 </div>
 
-                <ul class="breed-list flex-column gap-sm">
-                    <li v-for="breed in filteredBreeds" :key="breed.id" class="flex-row">
-                        <AppCheckbox v-model:values="selectedBreeds" :id="breed.id" :value="breed.id" :label="breed.name" />
-                    </li>
-                </ul>
+                <div class="filter-menu__main">
+                    <ul class="breed-list flex-column gap-sm">
+                        <li v-for="breed in filteredBreeds" :key="breed.id" class="flex-row">
+                            <AppCheckbox v-model:values="selectedBreeds" :id="breed.id" :value="breed.id" :label="breed.name" />
+                        </li>
+                    </ul>
+                </div>
 
                 <div class="filter-menu__footer flex-column gap-s">
                     <div v-if="selectedBreeds.length" class="selected-breeds flex-row flex-wrap gap-xs">
-                        <AppTag
+                        <AppButton
                             v-for="id in selectedBreeds"
                             :key="id"
                             class="text-xs"
                             @click.stop="() => removeBreed(id)"
-                            :label="breeds.find((b) => b.id === id)?.name"
-                        />
+                            variant="secondary"
+                            size="auto"
+                        >
+                            {{ breeds.find((b) => b.id === id)?.name }}
+                        </AppButton>
                     </div>
 
                     <div class="flex-row gap-s">
-                        <AppButton @click="selectedBreeds = []" variant="secondary" fill>Reset</AppButton>
-                        <AppButton @click="applyFilter" variant="primary" fill>Apply</AppButton>
+                        <AppButton @click="selectedBreeds = []" variant="secondary" full-width>Reset</AppButton>
+                        <AppButton @click="applyFilter" variant="primary" full-width>Apply</AppButton>
                     </div>
                 </div>
             </div>
@@ -140,20 +144,18 @@ useClickOutside(containerRef, close, modalVisible);
     max-height: 100vh;
     background-color: $surface-1;
     border: $border-2;
-    overflow-y: auto;
+    overflow: hidden;
     scrollbar-width: thin;
     z-index: 10;
 
     &__header,
     &__footer {
-        position: sticky;
         padding: 1rem;
         background-color: $surface-2;
         z-index: 1;
     }
 
     &__header {
-        top: 0;
         padding-bottom: 0.5rem;
         border-bottom: 1px $border-1;
 
@@ -162,23 +164,27 @@ useClickOutside(containerRef, close, modalVisible);
         }
     }
 
+    &__main {
+        flex: 1;
+        position: relative;
+        padding: 0.5rem 1rem;
+        overflow-y: auto;
+
+        .breed-list {
+            list-style: none;
+        }
+    }
+
     &__footer {
-        bottom: 0;
         padding-top: 0.5rem;
         border-top: 1px $border-1;
+
+        .selected-breeds {
+            max-height: 80px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
     }
-}
-
-.breed-list {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    list-style: none;
-}
-
-.selected-breeds {
-    max-height: 80px;
-    overflow-y: auto;
-    scrollbar-width: thin;
 }
 
 @media (width >= breakpoint(mobile)) {

@@ -111,7 +111,7 @@ $after-fancy: 0.1s;
         height: 260px;
         padding: 0.25rem;
         border-radius: 1rem 0 0 1rem;
-        color: $onSurface-0;
+        color: $text-primary;
         background-color: $surface-2;
         transition: $transition-fancy;
         transition-property: padding;

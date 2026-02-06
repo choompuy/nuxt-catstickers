@@ -14,13 +14,25 @@
 
 @for $w from 1 through 9 {
     .text-weight-#{$w}00 {
-        font-weight: $w * 100;
+        font-weight: $w * 100 !important;
     }
 }
 
 .flex-row {
     display: inline-flex;
     align-items: center;
+
+    .start {
+        margin-right: auto;
+    }
+
+    .center {
+        margin: 0 auto;
+    }
+
+    .end {
+        margin-left: auto;
+    }
 }
 
 .flex-column {
@@ -57,14 +69,18 @@
     }
 }
 
+.text-secondary {
+    color: $text-secondary;
+}
+
+.text-uppercase {
+    text-transform: uppercase;
+}
+
 .text-overflow {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
-}
-
-.secondary-text {
-    color: $secondary-text-color;
 }
 
 .fade-enter-active,
@@ -87,4 +103,25 @@
     opacity: 0;
     filter: blur(10px);
     transform: translate3d(50%, -50%, 0) scale(0);
+}
+
+.list-move,
+.list-enter-active,
+.list-leave-active {
+    transition: $transition-fancy;
+    transition-property: opacity, transform;
+}
+
+.list-enter-from {
+    opacity: 0 !important;
+    transform: translateY(-50%);
+}
+
+.list-leave-to {
+    opacity: 0 !important;
+    transform: translateY(50%);
+}
+
+.list-leave-active {
+    position: absolute;
 }

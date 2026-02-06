@@ -29,8 +29,8 @@ const props = defineProps<Props>();
     border-radius: 50%;
 
     &.active {
-        border-color: $onSurface-0;
-        background-color: $onSurface-0;
+        border-color: $text-primary;
+        background-color: $text-primary;
     }
 }
 </style>

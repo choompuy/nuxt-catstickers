@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import type { AppButtonVariant } from "~/types/appButton";
 import AppButton from "./base/AppButton.vue";
 
 interface Props {
-    variant?: AppButtonVariant;
     iconOnly?: boolean;
 }
 
@@ -25,16 +23,10 @@ const goHome = async () => {
 </script>
 
 <template>
-    <AppButton
-        class="logo"
-        @click="goHome"
-        :variant="variant"
-        :icon-only="iconOnly"
-        :hint="iconOnly ? 'Go to home' : undefined"
-        hintPos="bottom"
-        aria-label="Home"
-    >
+    <AppButton class="logo" @click="goHome" variant="link" :icon-only="iconOnly" :title="iconOnly ? 'Go to home' : undefined" aria-label="Home">
         <IconsCat />
         <h1 v-if="!iconOnly" class="text-l text-weight-600">CatStickers</h1>
     </AppButton>
 </template>
+
+<style lang="scss" scoped></style>

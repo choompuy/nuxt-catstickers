@@ -31,7 +31,7 @@ onBeforeUnmount(close);
 
 useHotkeys(
     {
-        "escape": close,
+        escape: close,
     },
     { preventDefault: true, condition: visible },
 );
@@ -46,7 +46,7 @@ useHotkeys(
                 </div>
 
                 <div class="controls flex-column gap-s">
-                    <AppButton @click="close" variant="transparent" hint="Close" hint-pos="left" aria-label="Close" iconOnly>
+                    <AppButton @click="close" variant="ghost" title="Close" aria-label="Close" iconOnly>
                         <IconsClose />
                     </AppButton>
 

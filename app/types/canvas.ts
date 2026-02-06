@@ -33,13 +33,21 @@ export interface CanvasHandler {
     apply?: (c: Canvas) => void;
 }
 
+export type CanvasHistoryAction = "add" | "remove" | "transform" | "replace" | "lasso";
+export interface CanvasHistoryMetadata {
+    timestamp: number;
+    label?: string;
+    groupId?: string;
+}
+
 export interface CanvasHistoryEntry {
-    type: "transform" | "add" | "remove" | "replace" | "lasso";
+    type: CanvasHistoryAction;
     object?: FabricObject;
     oldObject?: FabricObject;
     newObject?: FabricObject;
     before?: any;
     after?: any;
+    metadata?: CanvasHistoryMetadata;
 }
 
 export type HandlersMap = Record<CanvasModes, CanvasHandler>;

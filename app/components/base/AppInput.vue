@@ -28,10 +28,10 @@ const value = defineModel<any>("modelValue");
     border: 2px $border-1;
     border-radius: 0.5rem;
     background: $surface-1;
-    color: $onSurface-0;
+    color: $text-primary;
 
     &::placeholder {
-        color: $secondary-text-color;
+        color: $text-secondary;
     }
 }
 </style>

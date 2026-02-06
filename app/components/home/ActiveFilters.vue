@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CatBreed } from "#shared/types/cat";
-import AppTag from "~/components/base/AppTag.vue";
+import AppButton from "~/components/base/AppButton.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -31,9 +31,11 @@ const clearAll = async () => {
 <template>
     <div v-if="activeBreeds.length !== 0" class="flex-row gap-s">
         <div class="active-filter-container flex-row gap-s">
-            <AppTag v-for="breed in activeBreeds" class="active-filter text-s" :key="breed.id" :label="breed.name" @click="removeBreed(breed.id)" />
+            <AppButton v-for="breed in activeBreeds" :key="breed.id" class="active-filter text-s" @click="removeBreed(breed.id)" variant="secondary" size="auto">
+                {{ breed.name }}
+            </AppButton>
         </div>
-        <AppTag class="text-s text-weight-600" variant="danger" label="Clear all" @click="clearAll" />
+        <AppButton class="text-s text-weight-600" variant="danger" size="auto" @click="clearAll">Clear all</AppButton>
     </div>
 </template>
 
