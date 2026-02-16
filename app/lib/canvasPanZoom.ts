@@ -99,7 +99,7 @@ export const canvasPanZoom = {
         canvas.requestRenderAll();
     },
 
-    onMouseWheel(e: TPointerEvent, canvas: Canvas, img: FabricImage | null) {
+    onMouseWheelZoom(e: TPointerEvent, canvas: Canvas, img: FabricImage | null) {
         e.preventDefault();
 
         if (e instanceof WheelEvent) {
@@ -112,6 +112,23 @@ export const canvasPanZoom = {
         }
 
         if (img) clampViewport(canvas, img);
+        canvas.requestRenderAll();
+    },
+
+    onMouseWheel(e: WheelEvent, canvas: Canvas, isVertical = true) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const delta = e.deltaY;
+        const vpt = canvas.viewportTransform;
+
+        if (isVertical) {
+            vpt[5] -= delta * 0.5;
+        } else {
+            vpt[4] -= delta * 0.5;
+        }
+
+        canvas.setViewportTransform(vpt);
         canvas.requestRenderAll();
     },
 };

@@ -1,21 +1,5 @@
 import { KEY_TO_CODE } from "~/constants/keyToCode";
-
-interface KeyDownOptions {
-    condition?: Ref<boolean> | (() => boolean);
-    target?: Ref<HTMLElement | Window | null> | HTMLElement | Window;
-    modifiers?: {
-        ctrl?: boolean;
-        shift?: boolean;
-        alt?: boolean;
-        meta?: boolean;
-    };
-    preventDefault?: boolean;
-    stopPropagation?: boolean;
-    once?: boolean;
-    passive?: boolean;
-}
-
-type CallbackFn = (event: KeyboardEvent) => void;
+import type { CallbackFn, KeyDownOptions } from "~/types/hotkeys";
 
 const normalizeKey = (key: string): string => {
     const lower = key.toLowerCase();
@@ -25,6 +9,18 @@ const normalizeKey = (key: string): string => {
 export function useHotkeys(hotkeys: Record<string, CallbackFn>, options?: Omit<KeyDownOptions, "modifiers">) {
     const conditionRef = options?.condition ? (isRef(options.condition) ? options.condition : computed(options.condition)) : ref(true);
     const targetRef = options?.target ? (isRef(options.target) ? options.target : ref(options.target)) : ref(window);
+
+    const shiftKey = ref(false);
+    const ctrlKey = ref(false);
+    const altKey = ref(false);
+    const metaKey = ref(false);
+
+    const updateModifiers = (event: KeyboardEvent) => {
+        shiftKey.value = event.shiftKey;
+        ctrlKey.value = event.ctrlKey || event.metaKey;
+        altKey.value = event.altKey;
+        metaKey.value = event.metaKey;
+    };
 
     const parseHotkey = (hotkey: string) => {
         const parts = hotkey
@@ -50,6 +46,8 @@ export function useHotkeys(hotkeys: Record<string, CallbackFn>, options?: Omit<K
 
     const handler = (event: Event) => {
         const keyboardEvent = event as KeyboardEvent;
+        updateModifiers(keyboardEvent);
+
         if (!conditionRef.value) return;
 
         for (const hotkey of parsedHotkeys) {
@@ -69,9 +67,16 @@ export function useHotkeys(hotkeys: Record<string, CallbackFn>, options?: Omit<K
         }
     };
 
+    const keyupHandler = (event: Event) => {
+        updateModifiers(event as KeyboardEvent);
+    };
+
     const cleanup = () => {
         const el = targetRef.value;
-        if (el) el.removeEventListener("keydown", handler);
+        if (el) {
+            el.removeEventListener("keydown", handler);
+            el.removeEventListener("keyup", keyupHandler);
+        }
     };
 
     const setup = () => {
@@ -79,6 +84,7 @@ export function useHotkeys(hotkeys: Record<string, CallbackFn>, options?: Omit<K
         const el = targetRef.value;
         if (el && conditionRef.value) {
             el.addEventListener("keydown", handler, { passive: options?.passive ?? false });
+            el.addEventListener("keyup", keyupHandler, { passive: true });
         }
     };
 
@@ -87,5 +93,13 @@ export function useHotkeys(hotkeys: Record<string, CallbackFn>, options?: Omit<K
     onBeforeUnmount(cleanup);
     onDeactivated(cleanup);
 
-    return { cleanup };
+    return {
+        cleanup,
+        modifiers: {
+            shift: readonly(shiftKey),
+            ctrl: readonly(ctrlKey),
+            alt: readonly(altKey),
+            meta: readonly(metaKey),
+        },
+    };
 }

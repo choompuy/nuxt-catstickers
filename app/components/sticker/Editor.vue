@@ -4,12 +4,13 @@ import AppButton from "~/components/base/AppButton.vue";
 import Logo from "~/components/Logo.vue";
 import Grab from "~/components/icons/Grab.vue";
 import Lasso from "~/components/icons/Lasso.vue";
+import Rect from "~/components/icons/Rect.vue";
+import Ellipse from "~/components/icons/Ellipse.vue";
 import Layers from "~/components/icons/Layers.vue";
 import History from "~/components/icons/History.vue";
 import Sliders from "~/components/icons/Sliders.vue";
 
 interface Tool {
-    id: string;
     mode: CanvasModes;
     icon: Component;
     title: string;
@@ -22,7 +23,6 @@ interface Tab {
 }
 
 interface HistoryListItem {
-    type: string;
     metadata?: CanvasHistoryMetadata;
     index: number;
     isActive: boolean;
@@ -30,45 +30,34 @@ interface HistoryListItem {
 }
 
 const TOOLS: Tool[] = [
-    {
-        id: "pan",
-        mode: "panZoom",
-        icon: Grab,
-        title: "Pan",
-    },
-    {
-        id: "lasso",
-        mode: "lasso",
-        icon: Lasso,
-        title: "Lasso",
-    },
+    { mode: "panZoom", icon: Grab, title: "Pan" },
+    { mode: "lasso", icon: Lasso, title: "Lasso crop" },
+    { mode: "rect", icon: Rect, title: "Rect crop" },
+    { mode: "ellipse", icon: Ellipse, title: "Ellipse crop" },
 ];
 
 const TABS: Tab[] = [
-    {
-        id: "layers",
-        title: "Layers",
-        icon: Layers,
-    },
-    {
-        id: "history",
-        title: "History",
-        icon: History,
-    },
-    {
-        id: "filters",
-        title: "Filters",
-        icon: Sliders,
-    },
+    { id: "layers", title: "Layers", icon: Layers },
+    { id: "history", title: "History", icon: History },
+    { id: "filters", title: "Filters", icon: Sliders },
 ];
 
 const props = defineProps<{ cat: Cat }>();
 
 const { currentMode, currentZoom, history, initCanvas, switchMode, undo, redo, goTo } = useCanvas();
 
+const { modifiers } = useHotkeys(
+    {
+        "ctrl+z": undo,
+        "ctrl+shift+z": redo,
+        "ctrl+y": redo,
+    },
+    { preventDefault: true },
+);
+
 const wrapperRef = useTemplateRef<HTMLElement>("canvasWrapper");
 const canvasRef = useTemplateRef<HTMLCanvasElement>("canvas");
-const currentTab = ref<number>(0);
+const currentTab = ref<number>(1);
 
 const historyList = computed<HistoryListItem[]>(() => {
     const entries = history.entries.value;
@@ -82,7 +71,6 @@ const historyList = computed<HistoryListItem[]>(() => {
         if (!entry) continue;
 
         items.push({
-            type: entry.type,
             metadata: entry.metadata,
             index: i,
             isActive: i === currentIndex,
@@ -93,22 +81,19 @@ const historyList = computed<HistoryListItem[]>(() => {
     return items;
 });
 
+function formatTime(timestamp: number) {
+    const date = new Date(timestamp);
+    const formattedHours = date.getHours().toString().padStart(2, "0");
+    const formattedMinutes = date.getMinutes().toString().padStart(2, "0");
+
+    return `${formattedHours}:${formattedMinutes}`;
+}
+
 onMounted(async () => {
     if (!wrapperRef.value || !canvasRef.value) return;
 
-    initCanvas(wrapperRef.value, canvasRef.value, props.cat.url);
+    initCanvas(wrapperRef.value, canvasRef.value, props.cat.url, modifiers);
 });
-
-useHotkeys(
-    {
-        "ctrl+z": undo,
-        "ctrl+shift+z": redo,
-        "ctrl+y": redo,
-    },
-    {
-        preventDefault: true,
-    },
-);
 </script>
 
 <template>
@@ -142,7 +127,7 @@ useHotkeys(
             <div class="left-bar flex-column gap-xs">
                 <AppButton
                     v-for="tool in TOOLS"
-                    :key="tool.id"
+                    :key="tool.mode"
                     variant="state"
                     :active="tool.mode && currentMode === tool.mode"
                     :title="tool.title"
@@ -186,7 +171,6 @@ useHotkeys(
             <div class="right-bar">
                 <div class="tab-header border-bottom flex-row text-secondary">
                     <h3 class="text-m text-weight-700 text-uppercase">{{ TABS[currentTab]?.title || "" }}</h3>
-                    <span v-if="currentTab === 1" class="end text-s text-weight-600">{{ historyList.length }} actions</span>
                 </div>
 
                 <div class="tab-content border-bottom">
@@ -205,27 +189,21 @@ useHotkeys(
                                     redo: h.isRedo,
                                 }"
                             >
-                                <AppButton
-                                    :active="h.isActive"
-                                    variant="outline"
-                                    size="auto"
-                                    border-radius="none"
-                                    full-width
-                                    @click="() => goTo(h.index)"
-                                >
-                                    <div class="start flex-column gap-xs">
-                                        <span class="text-s">
-                                            {{ h.metadata?.label || "No description" }}
+                                <AppButton :active="h.isActive" variant="outline" border-radius="none" full-width @click="() => goTo(h.index)">
+                                    <div class="start flex-row gap-s">
+                                        <span v-if="h.metadata?.timestamp" class="text-secondary text-xs">
+                                            {{ formatTime(h.metadata.timestamp) }}
                                         </span>
-                                        <span class="text-secondary text-xs">
-                                            {{ h.type }}
+                                        <span class="text-s text-overflow">
+                                            {{ h.metadata?.label || "No description" }}
                                         </span>
                                     </div>
 
-                                    <div class="end">
-                                        <span class="text-secondary text-xs">
-                                            {{ new Date(h.metadata?.timestamp || Date.now()).toLocaleTimeString() }}
-                                        </span>
+                                    <div class="end flex-row">
+                                        <component v-if="h.metadata?.mode" :is="TOOLS.find((v) => v.mode === h.metadata?.mode)?.icon" />
+                                        <!-- <span class="text-secondary text-xs">
+                                            {{}}
+                                        </span> -->
                                         <span></span>
                                     </div>
                                 </AppButton>
@@ -323,7 +301,7 @@ useHotkeys(
 
                     .start {
                         flex: 1;
-                        align-items: flex-start;
+                        overflow: hidden;
                     }
                 }
             }

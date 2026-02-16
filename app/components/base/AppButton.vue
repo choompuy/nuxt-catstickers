@@ -170,7 +170,7 @@ const buttonAttrs = computed(() => ({
     }
     
     &[data-variant="outline"] {
-        border: 1px solid transparent;
+        border-left: 2px solid transparent;
         background-color: $surface-0;
         color: $text-primary;
 

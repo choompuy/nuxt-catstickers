@@ -1,12 +1,33 @@
 import type { FabricObject } from "fabric";
-import type { CanvasHistoryEntry, CanvasHistoryMetadata, CanvasState } from "~/types/canvas";
+import type { CanvasHistoryEntry, CanvasHistoryMetadata, CanvasModes, CanvasState } from "~/types/canvas";
 
-export function useCanvasHistory(state: CanvasState, maxSize = 200) {
+interface CanvasHistoryOptions {
+    state: CanvasState;
+    maxSize?: number;
+    switchMode: (mode: CanvasModes) => void;
+}
+
+export function useCanvasHistory(options: CanvasHistoryOptions) {
+    const { state, maxSize = 200, switchMode } = options;
+
     const entries = shallowRef<CanvasHistoryEntry[]>([]);
     const currentIndex = ref(-1);
 
-    const canUndo = computed(() => currentIndex.value >= 0);
+    const canUndo = computed(() => currentIndex.value > 0);
     const canRedo = computed(() => currentIndex.value < entries.value.length - 1);
+
+    const init = () => {
+        entries.value = [
+            {
+                type: "default",
+                metadata: {
+                    label: "Project initialized",
+                    timestamp: Date.now(),
+                },
+            },
+        ];
+        currentIndex.value = 0;
+    };
 
     const push = (entry: CanvasHistoryEntry, meta?: Partial<CanvasHistoryMetadata>) => {
         const newEntries = entries.value.slice(0, currentIndex.value + 1);
@@ -69,6 +90,7 @@ export function useCanvasHistory(state: CanvasState, maxSize = 200) {
             default:
                 if (entry.before) entry.before();
         }
+
         state.canvas.requestRenderAll();
     };
 
@@ -99,21 +121,32 @@ export function useCanvasHistory(state: CanvasState, maxSize = 200) {
             default:
                 if (entry.after) entry.after();
         }
+
         state.canvas.requestRenderAll();
     };
 
     const undo = () => {
+        if (!canUndo.value) return;
+
         const entry = entries.value[currentIndex.value];
         if (!entry) return;
+
         executeUndo(entry);
         currentIndex.value--;
+
+        const currentEntry = entries.value[currentIndex.value];
+        if (currentEntry?.metadata?.mode) switchMode(currentEntry.metadata.mode);
     };
 
     const redo = () => {
         if (!canRedo.value) return;
+
         currentIndex.value++;
         const entry = entries.value[currentIndex.value];
-        if (entry) executeRedo(entry);
+        if (!entry) return;
+
+        executeRedo(entry);
+        if (entry.metadata?.mode) switchMode(entry.metadata.mode);
     };
 
     const goTo = (targetIndex: number) => {
@@ -136,6 +169,9 @@ export function useCanvasHistory(state: CanvasState, maxSize = 200) {
         }
 
         currentIndex.value = targetIndex;
+        const entry = entries.value[targetIndex];
+        if (entry && entry.metadata?.mode) switchMode(entry.metadata.mode);
+
         state.canvas.requestRenderAll();
     };
 
@@ -144,9 +180,8 @@ export function useCanvasHistory(state: CanvasState, maxSize = 200) {
         currentIndex.value = -1;
     };
 
-    const getEntriesByGroup = (groupId: string) => entries.value.filter((e) => e.metadata?.groupId === groupId);
-
     return {
+        init,
         push,
         saveState,
         restoreState,
@@ -154,7 +189,6 @@ export function useCanvasHistory(state: CanvasState, maxSize = 200) {
         redo,
         goTo,
         clear,
-        getEntriesByGroup,
         exposed: {
             entries: readonly(entries),
             index: readonly(currentIndex),

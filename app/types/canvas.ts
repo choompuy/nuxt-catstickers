@@ -1,12 +1,14 @@
-import type { Canvas, FabricImage, FabricObject, Path, TPointerEvent, TPointerEventInfo } from "fabric";
+import type { Canvas, Ellipse, FabricImage, FabricObject, Path, Rect, TPointerEvent, TPointerEventInfo } from "fabric";
 import type { ShallowRef } from "vue";
 
-export type CanvasModes = "panZoom" | "lasso" | "select";
-export type CanvasButton = 0 | 1 | 2;
+export type CanvasClipMode = "lasso" | "rect" | "ellipse";
+export type CanvasModes = "panZoom" | "select" | CanvasClipMode;
+
 export type CanvasInput = {
     device: "mouse" | "touch";
-    button: CanvasButton;
+    button: 0 | 1 | 2;
 };
+export type CanvasButton = CanvasInput["button"];
 
 export interface CanvasState {
     wrapperEl: HTMLElement | null;
@@ -15,13 +17,13 @@ export interface CanvasState {
     image: { original: FabricImage | null; active: FabricImage | null };
     isActive: boolean;
     entities: {
-        lasso: ShallowRef<Path | null>;
+        clip: ShallowRef<Path | Rect | Ellipse | null>;
         selection: ShallowRef<FabricObject | null>;
     };
-    input: CanvasInput;
 }
 
 export type CanvasEvent = TPointerEventInfo<TPointerEvent>;
+export type CanvasEventWheel = TPointerEventInfo<WheelEvent>;
 
 export interface CanvasHandler {
     down: (event: CanvasEvent, c: Canvas) => void;
@@ -33,21 +35,21 @@ export interface CanvasHandler {
     apply?: (c: Canvas) => void;
 }
 
-export type CanvasHistoryAction = "add" | "remove" | "transform" | "replace" | "lasso";
-export interface CanvasHistoryMetadata {
-    timestamp: number;
-    label?: string;
-    groupId?: string;
-}
+export type HandlersMap = Record<CanvasModes, CanvasHandler>;
 
 export interface CanvasHistoryEntry {
-    type: CanvasHistoryAction;
+    type: "add" | "remove" | "transform" | "replace" | "default";
     object?: FabricObject;
     oldObject?: FabricObject;
     newObject?: FabricObject;
     before?: any;
     after?: any;
-    metadata?: CanvasHistoryMetadata;
+    metadata?: {
+        timestamp: number;
+        label?: string;
+        mode?: CanvasModes;
+    };
 }
 
-export type HandlersMap = Record<CanvasModes, CanvasHandler>;
+export type CanvasHistoryAction = CanvasHistoryEntry["type"];
+export type CanvasHistoryMetadata = CanvasHistoryEntry["metadata"];
