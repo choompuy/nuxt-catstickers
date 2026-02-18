@@ -2,10 +2,14 @@
 import type { CanvasHistoryMetadata, CanvasModes } from "~/types/canvas";
 import AppButton from "~/components/base/AppButton.vue";
 import Logo from "~/components/Logo.vue";
+
+import Move from "~/components/icons/Move.vue";
 import Grab from "~/components/icons/Grab.vue";
 import Lasso from "~/components/icons/Lasso.vue";
 import Rect from "~/components/icons/Rect.vue";
 import Ellipse from "~/components/icons/Ellipse.vue";
+import Text from "~/components/icons/Text.vue";
+
 import Layers from "~/components/icons/Layers.vue";
 import History from "~/components/icons/History.vue";
 import Sliders from "~/components/icons/Sliders.vue";
@@ -30,10 +34,12 @@ interface HistoryListItem {
 }
 
 const TOOLS: Tool[] = [
+    { mode: "move", icon: Move, title: "Move" },
     { mode: "panZoom", icon: Grab, title: "Pan" },
     { mode: "lasso", icon: Lasso, title: "Lasso crop" },
     { mode: "rect", icon: Rect, title: "Rect crop" },
     { mode: "ellipse", icon: Ellipse, title: "Ellipse crop" },
+    { mode: "text", icon: Text, title: "Add text" },
 ];
 
 const TABS: Tab[] = [

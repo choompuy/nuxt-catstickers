@@ -1,8 +1,7 @@
-import type { Canvas, Ellipse, FabricImage, FabricObject, Path, Rect, TPointerEvent, TPointerEventInfo } from "fabric";
-import type { ShallowRef } from "vue";
+import type { Canvas, FabricImage, FabricObject, TPointerEvent, TPointerEventInfo } from "fabric";
 
 export type CanvasClipMode = "lasso" | "rect" | "ellipse";
-export type CanvasModes = "panZoom" | "select" | CanvasClipMode;
+export type CanvasModes = CanvasClipMode | "move" | "panZoom" | "text";
 
 export type CanvasInput = {
     device: "mouse" | "touch";
@@ -16,10 +15,6 @@ export interface CanvasState {
     canvas: Canvas | null;
     image: { original: FabricImage | null; active: FabricImage | null };
     isActive: boolean;
-    entities: {
-        clip: ShallowRef<Path | Rect | Ellipse | null>;
-        selection: ShallowRef<FabricObject | null>;
-    };
 }
 
 export type CanvasEvent = TPointerEventInfo<TPointerEvent>;

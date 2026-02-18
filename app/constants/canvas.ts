@@ -11,27 +11,25 @@ export const CANVAS_CONFIG = {
     selection: false,
 };
 
+export const CURSOR = {
+    default: "default",
+    move: "move",
+    grab: "grab",
+    grabbing: "grabbing",
+    crosshair: "crosshair",
+    text: "text",
+};
+
 export const CURSOR_MAP: Record<CanvasModes, { default: string; hover: string }> = {
-    panZoom: { default: "grab", hover: "grab" },
-    select: { default: "move", hover: "pointer" },
-    lasso: { default: "crosshair", hover: "crosshair" },
-    rect: { default: "crosshair", hover: "crosshair" },
-    ellipse: { default: "crosshair", hover: "crosshair" },
+    move: { default: CURSOR.default, hover: CURSOR.default },
+    panZoom: { default: CURSOR.grab, hover: CURSOR.grab },
+    lasso: { default: CURSOR.crosshair, hover: CURSOR.crosshair },
+    rect: { default: CURSOR.crosshair, hover: CURSOR.crosshair },
+    ellipse: { default: CURSOR.crosshair, hover: CURSOR.crosshair },
+    text: { default: CURSOR.text, hover: CURSOR.text },
 };
 
-export const INITIAL_STATE: CanvasState = {
-    wrapperEl: null,
-    canvasEl: null,
-    canvas: null,
-    image: { original: null, active: null },
-    isActive: false,
-    entities: {
-        clip: shallowRef(null),
-        selection: shallowRef(null),
-    },
-};
-
-export const CLIP_MODES = ["lasso", "rect", "ellipse"];
+export const CLIP_MODES: CanvasModes[] = ["lasso", "rect", "ellipse"];
 export const UNDO_TRANSFORM = Symbol("undoTransform");
 
 export const SELECT_STROKE_COLOR = "rgba(255, 255, 255, 1)";
@@ -57,13 +55,13 @@ export const OBJECT_BASE_PROPS: TFabricObjectProps = {
     selectable: true,
     evented: true,
     fill: null,
-    hoverCursor: "move",
     hasControls: true,
     hasBorders: true,
     borderColor: SELECT_BORDER_COLOR,
     borderScaleFactor: 1.5,
     borderOpacityWhenMoving: 0.6,
     cornerColor: SELECT_CORNER_COLOR,
+    cornerStrokeColor: SELECT_CORNER_COLOR,
     cornerSize: 8,
     transparentCorners: false,
 };

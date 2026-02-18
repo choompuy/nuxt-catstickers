@@ -1,25 +1,29 @@
 {
-  "name": "nuxt-app",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "host": "nuxt dev --host",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
-  },
-  "dependencies": {
-    "@nuxt/image": "^1.11.0",
-    "fabric": "^6.9.0",
-    "nuxt": "^4.1.2",
-    "vue": "^3.5.21",
-    "vue-router": "^4.5.1"
-  },
-  "devDependencies": {
-    "@types/node": "^24.5.2",
-    "baseline-browser-mapping": "^2.8.31",
-    "sass-embedded": "^1.93.0"
-  }
+    "name": "nuxt-app",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "nuxt build",
+        "dev": "nuxt dev",
+        "host": "nuxt dev --host",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare"
+    },
+    "dependencies": {
+        "@nuxt/image": "^1.11.0",
+        "fabric": "^6.9.0",
+        "nuxt": "^4.1.2",
+        "vue": "^3.5.21",
+        "vue-router": "^4.5.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.5.2",
+        "baseline-browser-mapping": "^2.9.19",
+        "sass-embedded": "^1.93.0"
+    },
+    "overrides": {
+        "@mapbox/node-pre-gyp": "^2.0.3",
+        "tar": "^7.5.9"
+    }
 }

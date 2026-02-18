@@ -1,24 +1,23 @@
-import { Canvas, Ellipse, FabricObject, Path, Rect } from "fabric";
+import { Canvas, FabricObject, Path } from "fabric";
 import type { CanvasButton, CanvasEvent, CanvasEventWheel, CanvasHandler, CanvasModes, CanvasState, HandlersMap } from "~/types/canvas";
-import { CANVAS_CONFIG, CLIP_MODES, CURSOR_MAP, INITIAL_STATE, UNDO_TRANSFORM } from "~/constants/canvas";
+import { CANVAS_CONFIG, CLIP_MODES, CURSOR_MAP, UNDO_TRANSFORM } from "~/constants/canvas";
 import { canvasImage } from "~/lib/canvasImage";
 import { canvasPanZoom } from "~/lib/canvasPanZoom";
 import { canvasEllipse, canvasLasso, canvasRect } from "~/lib/canvasClip";
+import { canvasText } from "~/lib/canvasText";
 
 type hotkeysModifiers = ReturnType<typeof useHotkeys>["modifiers"];
 
+const INITIAL_STATE: CanvasState = {
+    wrapperEl: null,
+    canvasEl: null,
+    canvas: null,
+    image: { original: null, active: null },
+    isActive: false,
+};
+
 export function useCanvas() {
-    const state: CanvasState = {
-        wrapperEl: null,
-        canvasEl: null,
-        canvas: null,
-        image: { original: null, active: null },
-        isActive: false,
-        entities: {
-            clip: shallowRef(null),
-            selection: shallowRef(null),
-        },
-    };
+    const state: CanvasState = { ...INITIAL_STATE };
 
     const history = useCanvasHistory({
         state: state,
@@ -96,8 +95,10 @@ export function useCanvas() {
         const isClip = CLIP_MODES.includes(mode);
         showOriginalImage(isClip);
 
-        if (isClip && state.entities.clip.value) {
-            state.canvas.setActiveObject(state.entities.clip.value);
+        const clip = state.image.active?.clipPath as FabricObject | undefined;
+
+        if (isClip && clip) {
+            state.canvas.setActiveObject(clip);
         } else {
             state.canvas.discardActiveObject();
         }
@@ -138,7 +139,7 @@ export function useCanvas() {
         objectListeners.delete(obj);
     };
 
-    const attachObjectListeners = (obj: FabricObject | Path, mode?: CanvasModes) => {
+    const attachObjectListeners = (obj: FabricObject, mode?: CanvasModes) => {
         if (objectListeners.has(obj)) {
             detachObjectListeners(obj);
         }
@@ -185,13 +186,12 @@ export function useCanvas() {
         });
     };
 
-    const addClipShape = (shape: Path | Rect | Ellipse, needHistory = false) => {
+    const addClipShape = (shape: FabricObject, needHistory = false) => {
         if (!shape || !state.canvas || !state.image.active) return;
 
         state.canvas.add(shape);
         state.canvas.setActiveObject(shape);
         state.image.active.clipPath = shape;
-        state.entities.clip.value = shape;
 
         if (needHistory) {
             history.push(
@@ -205,30 +205,38 @@ export function useCanvas() {
     };
 
     const clearClipShape = (needHistory = false) => {
-        const shape = state.entities.clip.value;
-        if (!shape || !state.canvas || !state.image.active) return;
+        if (!state.canvas) return;
 
-        detachObjectListeners(shape);
+        const image = state.image.active;
+        const clip = image?.clipPath as FabricObject | undefined;
+
+        if (!image || !clip) return;
+
+        detachObjectListeners(clip);
 
         if (needHistory) {
-            history.push({ type: "default", before: () => addClipShape(shape), after: clearClipShape }, { label: "Clear clip" });
+            history.push({ type: "default", before: () => addClipShape(clip), after: clearClipShape }, { label: "Clear clip" });
         }
 
-        state.canvas.remove(shape);
-        shape.dispose();
-        state.entities.clip.value = null;
-        state.image.active.clipPath = undefined;
+        state.canvas.remove(clip);
+        clip.dispose();
+        image.clipPath = undefined;
         showOriginalImage(false);
     };
 
     const createCropHandler = (tool: typeof canvasLasso | typeof canvasRect | typeof canvasEllipse): CanvasHandler => ({
         down: (event, c) => {
-            if (event.target === state.entities.clip.value) return;
-            if (state.entities.clip.value) clearClipShape(true);
-            tool.down(event.e, c);
+            if (!state.image.active || (event.target && event.target === state.image.active.clipPath)) return;
+
+            if (event.target && event.target.type !== "image") {
+                c.discardActiveObject();
+            }
+
+            if (state.image.active.clipPath) clearClipShape(true);
+            tool.down(event, c);
         },
         move: (event, c) =>
-            tool.move(event.e, c, {
+            tool.move(event, c, {
                 shift: keyboardModifiers?.shift.value ?? false,
                 ctrl: keyboardModifiers?.ctrl.value ?? false,
                 alt: keyboardModifiers?.alt.value ?? false,
@@ -237,66 +245,78 @@ export function useCanvas() {
         up: (c) => {
             if (!state.image.active) return;
             const shape = tool.up(c);
-            if (shape) addClipShape(shape, true);
+
+            if (!shape) return;
+
+            addClipShape(shape, true);
         },
         undo: (c) => {
-            if (state.entities.clip.value) clearClipShape(true);
+            if (state.image.active && state.image.active.clipPath) clearClipShape(true);
             tool.undo(c);
         },
     });
 
     const handlers: HandlersMap = {
-        panZoom: {
-            down: (event, c) => canvasPanZoom.onMouseDown(event.e, c),
-            move: (event, c) => canvasPanZoom.onMouseMove(event.e, c, state.image.active),
-            up: (c) => canvasPanZoom.onMouseUp(c),
-        },
-
-        lasso: createCropHandler(canvasLasso),
-        rect: createCropHandler(canvasRect),
-        ellipse: createCropHandler(canvasEllipse),
-
-        select: {
+        move: {
             down: (event, c) => {
-                if (getCanvasInput(event.e).button === 2 && state.entities.clip.value) {
-                    const activeObj = c.getActiveObject();
-                    if (activeObj === state.entities.clip.value) (activeObj as any)[UNDO_TRANSFORM]?.();
+                if (!state.image.active) return;
+                if (event.target === state.image.active.clipPath) {
+                    c.discardActiveObject();
                 }
             },
             move: () => {},
             up: () => {},
             undo: (c) => (c.getActiveObject() as any)?.[UNDO_TRANSFORM]?.(),
         },
+
+        panZoom: {
+            down: (event, c) => canvasPanZoom.down(event, c),
+            move: (event, c) => canvasPanZoom.mouseMove(event, c, state.image.active),
+            up: (c) => canvasPanZoom.up(c),
+        },
+
+        lasso: createCropHandler(canvasLasso),
+        rect: createCropHandler(canvasRect),
+        ellipse: createCropHandler(canvasEllipse),
+
+        text: {
+            down: (event, c) => {
+                if (event.target?.type === "textbox") return;
+
+                switchMode("move");
+                const text = canvasText.down(event, c);
+                if (text) attachObjectListeners(text, "text");
+            },
+            move: () => {},
+            up: () => {},
+        },
     };
 
     const getHandler = (button: number, mode: CanvasModes) => (button === 1 ? handlers.panZoom : (handlers[mode] ?? null));
 
-    const activatePanZoom = (event: CanvasEvent) => {
-        if (!state.canvas) return;
-        handlers.panZoom.down(event, state.canvas);
-        state.isActive = true;
-        currentButton.value = 1;
-    };
-
-    const executeUndo = (handler: any, target?: any) => {
-        if (!state.canvas) return;
-        target?.selectable ? handlers.select.undo?.(state.canvas) : handler.undo?.(state.canvas);
-    };
-
-    const activateHandler = (event: CanvasEvent, handler: any) => {
-        if (!state.canvas) return;
-        state.isActive = true;
-        handler.down(event, state.canvas);
-    };
-
     const buttonActions = {
-        0: (event: CanvasEvent, handler: any) => activateHandler(event, handler),
-        1: activatePanZoom,
+        0: (event: CanvasEvent, handler: any) => {
+            if (!state.canvas) return;
+            state.isActive = true;
+            handler.down(event, state.canvas);
+        },
+        1: (event: CanvasEvent) => {
+            if (!state.canvas) return;
+            handlers.panZoom.down(event, state.canvas);
+            state.isActive = true;
+            currentButton.value = 1;
+        },
         2: (event: CanvasEvent, handler: any) => {
             if (!state.canvas) return;
             if (state.isActive && currentButton.value !== 1) {
                 state.isActive = false;
-                executeUndo(handler, event.target);
+
+                if ((state.canvas.getActiveObject() as any)[UNDO_TRANSFORM]) {
+                    (state.canvas.getActiveObject() as any)[UNDO_TRANSFORM]();
+                    return;
+                }
+
+                handlers[currentMode.value].undo?.(state.canvas);
             } else {
                 state.canvas.requestRenderAll();
             }
@@ -306,7 +326,7 @@ export function useCanvas() {
     const handleMouseDown = (event: CanvasEvent) => {
         if (!state.canvas) return;
 
-        const input = getCanvasInput(event.e);
+        const input = getCanvasInput(event);
         const handler = getHandler(input.button, currentMode.value);
         if (!handler) return;
 
@@ -315,19 +335,20 @@ export function useCanvas() {
     };
 
     const handleTouchMove = (event: CanvasEvent, handler: CanvasHandler) => {
+        if (!state.canvas) return;
+
         if (currentMode.value === "panZoom") {
-            canvasPanZoom.onTouchMove(event.e, state.canvas!, state.image.active);
+            canvasPanZoom.touchMove(event, state.canvas, state.image.active);
             return true;
         }
 
-        if (getCanvasInput(event.e).button === 1) {
-            if (["lasso", "rect"].includes(currentMode.value)) {
-                canvasLasso.undo(state.canvas!);
+        if (getCanvasInput(event).button === 1) {
+            handler.undo?.(state.canvas);
+
+            if (state.canvas._currentTransform && event.target?.selectable) {
+                state.canvas.endCurrentTransform();
             }
-            if (state.canvas!._currentTransform && event.target?.selectable) {
-                state.canvas!.endCurrentTransform();
-            }
-            canvasPanZoom.onTouchMove(event.e, state.canvas!, state.image.active);
+            canvasPanZoom.touchMove(event, state.canvas, state.image.active);
             currentButton.value = 1;
             return true;
         }
@@ -341,7 +362,7 @@ export function useCanvas() {
         const handler = getHandler(currentButton.value, currentMode.value);
         if (!handler) return;
 
-        const input = getCanvasInput(event.e);
+        const input = getCanvasInput(event);
         if (input.device === "touch" && handleTouchMove(event, handler)) return;
 
         handler.move(event, state.canvas);
@@ -357,17 +378,17 @@ export function useCanvas() {
         if (!state.canvas) return;
 
         if (keyboardModifiers?.shift.value) {
-            canvasPanZoom.onMouseWheel(event.e, state.canvas, false);
+            canvasPanZoom.wheel(event, state.canvas, false);
             return;
         }
 
         if (keyboardModifiers?.ctrl.value) {
-            canvasPanZoom.onMouseWheelZoom(event.e, state.canvas, state.image.active);
+            canvasPanZoom.wheelZoom(event, state.canvas, state.image.active);
             currentZoom.value = state.canvas.getZoom();
             return;
         }
 
-        canvasPanZoom.onMouseWheel(event.e, state.canvas);
+        canvasPanZoom.wheel(event, state.canvas);
     };
 
     function handleResize() {
