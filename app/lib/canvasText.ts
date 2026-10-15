@@ -14,13 +14,11 @@ const INITIAL_STATE: TextState = {
 
 const state = { ...INITIAL_STATE };
 
-let isScaling = false;
-
-function onScale(e: any) {
+function onScale(e: unknown) {
     const obj = state.text;
     console.log(e);
-    if (!obj || Object.keys(e.transform).length <= 0) return;
-    const t = e.transform;
+    if (!obj || !("transform" in (e as { transform: Record<string, unknown> })) || Object.keys((e as { transform: Record<string, unknown> }).transform).length <= 0) return;
+    const t = (e as { transform: Record<string, unknown> }).transform;
 
     const originX = t.originX;
     const originY = t.originY;
@@ -28,8 +26,8 @@ function onScale(e: any) {
     const pointerX = t.ex;
     const pointerY = t.ey;
 
-    const baseLeft = t.original.left;
-    const baseTop = t.original.top;
+    // const baseLeft = t.original.left;
+    // const baseTop = t.original.top;
 
     let width = obj.width;
     let height = obj.height;
@@ -58,7 +56,7 @@ function onScale(e: any) {
 function attachTextTransforms(obj: Textbox) {
     obj.on("scaling", onScale);
     obj.on("modified", () => {
-        isScaling = false;
+        // isScaling = false; // unused
     });
 }
 

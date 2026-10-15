@@ -15,8 +15,8 @@ export interface FieldSchema<K extends CanvasObjectStateKeys = CanvasObjectState
     max?: number;
     icon?: Component | string;
     suffix?: string;
-    format?: (value: any) => any;
-    parse?: (value: any) => any;
+    format?: (value: number) => number;
+    parse?: (value: number) => number;
 }
 
 export const LAYOUT_FIELDS: PropertiesFields = {

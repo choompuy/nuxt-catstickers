@@ -46,7 +46,7 @@ const distributeItems = (cats: Cat[], reset = false) => {
         let minIndex = 0;
         let min = heights[0] ?? 0;
         for (let i = 1; i < heights.length; i++) {
-            let currentHeight = heights[i] ?? 0;
+            const currentHeight = heights[i] ?? 0;
             if (currentHeight < min) {
                 min = currentHeight;
                 minIndex = i;

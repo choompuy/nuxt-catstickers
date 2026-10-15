@@ -3,6 +3,11 @@ import type { CanvasLayerEntry, CanvasModes, CanvasState } from "~/types/canvas"
 import { OBJECT_EVENTS, SCENE_INDEX } from "~/constants/canvas";
 import type { CanvasObjectTypes, CanvasObjectState } from "~/types/canvasObject";
 
+interface ObjectListenerData {
+    modified: () => void;
+    state: CanvasObjectState;
+}
+
 interface CanvasLayersOptions {
     state: CanvasState;
 }
@@ -26,13 +31,7 @@ export function useCanvasController(options: CanvasLayersOptions) {
     });
     const selectedCleanup = new WeakMap<FabricObject, () => void>();
     const objectsById = new Map<string, FabricObject>();
-    const objectListeners = new WeakMap<
-        FabricObject,
-        {
-            modified: () => void;
-            state: any;
-        }
-    >();
+    const objectListeners = new WeakMap<FabricObject, ObjectListenerData>();
     const layersMap = shallowReactive(new Map<string, CanvasLayerEntry>());
     const layersOrder = ref<string[]>([]);
     const layersList = computed(() => layersOrder.value.map((id) => layersMap.get(id)!));
@@ -114,8 +113,8 @@ export function useCanvasController(options: CanvasLayersOptions) {
         };
     }
 
-    function syncSelection(e: any | null) {
-        const obj: FabricObject | undefined = e.selected?.[0];
+    function syncSelection(e: unknown | null) {
+        const obj: FabricObject | undefined = (e as { selected?: FabricObject[] })?.selected?.[0];
         const id = obj?.get("ID");
 
         clearSelection();
@@ -132,7 +131,7 @@ export function useCanvasController(options: CanvasLayersOptions) {
         attachSelectedObject(obj);
     }
 
-    function setObject(obj: FabricObject, state: any) {
+    function setObject(obj: FabricObject, state: Partial<CanvasObjectState>) {
         obj.set(state);
         obj.setCoords();
         requestRender();
@@ -171,17 +170,21 @@ export function useCanvasController(options: CanvasLayersOptions) {
     function removeObject(obj: FabricObject) {
         if (!state.canvas) return;
 
-        const id = (obj as any)["ID"];
+        const id = obj.get("ID") as string | undefined;
         if (id) objectsById.delete(id);
 
+        // Detach all event listeners
         detachObject(obj);
+        detachSelectedObject(obj);
+
+        // Remove from canvas
         state.canvas.remove(obj);
     }
 
     function updateObject(
         id: string,
         changes: Partial<CanvasObjectState>,
-        meta?: CanvasObjectMeta
+        _meta?: CanvasObjectMeta
     ) {
         const obj = getObject(id);
         if (!obj) return;
@@ -286,7 +289,7 @@ export function useCanvasController(options: CanvasLayersOptions) {
     function updateLayer(
         id: string,
         changes: Partial<CanvasLayerEntry>,
-        options: CanvasObjectMeta & { skipHistory?: boolean } = {}
+        _options: CanvasObjectMeta & { skipHistory?: boolean } = {}
     ) {
         const layer = layersMap.get(id);
         if (!layer) return;
@@ -309,7 +312,7 @@ export function useCanvasController(options: CanvasLayersOptions) {
         updateObject(id, { visible }, { label: visible ? "Show layer" : "Hide layer" });
     }
 
-    function reorderLayer(id: string, newIndex: number, skipHistory = false) {
+    function _reorderLayer(id: string, newIndex: number, skipHistory = false) {
         const index = layersOrder.value.indexOf(id);
         if (index === -1 || index === newIndex) return;
 
@@ -324,7 +327,7 @@ export function useCanvasController(options: CanvasLayersOptions) {
         requestRender();
 
         if (!skipHistory) {
-            history.update((i) => reorderLayer(id, i, true), index, newIndex, {
+            history.update((i) => _reorderLayer(id, i, true), index, newIndex, {
                 label: "Reorder layer",
             });
         }
@@ -349,5 +352,6 @@ export function useCanvasController(options: CanvasLayersOptions) {
         removeLayer,
         updateLayer,
         toggleLayerVisibility,
+        reorderLayer: _reorderLayer,
     };
 }

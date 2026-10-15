@@ -1,12 +1,14 @@
-const cache = new Map<string, { expire: number; data: any }>();
+import type { H3Event } from "h3";
+
+const cache = new Map<string, { expire: number; data: unknown }>();
 const rateLimit = new Map<string, { count: number; last: number }>();
-const pending = new Map<string, Promise<any>>();
+const pending = new Map<string, Promise<unknown>>();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24; // 1 day
 const RATE_WINDOW = 1000 * 2; // 2sec
 const RATE_MAX = 20;
 
-function makeKey(url: string, query: any) {
+function makeKey(url: string, query: Record<string, unknown>) {
     const sorted = query
         ? Object.keys(query)
               .sort()
@@ -55,7 +57,7 @@ function getCache(key: string) {
     return item.data;
 }
 
-function setCache(key: string, data: any, ttl: number = CACHE_TTL) {
+function setCache(key: string, data: unknown, ttl: number = CACHE_TTL) {
     cache.set(key, {
         data,
         expire: Date.now() + ttl,
@@ -64,8 +66,8 @@ function setCache(key: string, data: any, ttl: number = CACHE_TTL) {
 
 export async function apiRequest<T>(
     url: string,
-    options: { query?: any; headers?: any; cache?: boolean; ttl?: number } = {},
-    event: any
+    options: { query?: Record<string, unknown>; headers?: Record<string, string>; cache?: boolean; ttl?: number } = {},
+    event: H3Event
 ): Promise<T> {
     const key = makeKey(url, options.query);
 
@@ -96,9 +98,9 @@ export async function apiRequest<T>(
 
             return data;
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
             throw createError({
-                statusCode: err?.statusCode || 500,
+                statusCode: (err as { statusCode?: number })?.statusCode || 500,
                 statusMessage: "External API Error",
             });
         })

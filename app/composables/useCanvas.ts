@@ -35,6 +35,15 @@ export function useCanvas() {
     const currentButton = ref<CanvasButton>(0);
     const currentZoom = ref<number>(0);
 
+    // Store event handler references for proper cleanup
+    let canvasEventHandlers: {
+        mouseDown: (e: CanvasEvent) => void;
+        mouseMove: (e: CanvasEvent) => void;
+        mouseUp: () => void;
+        mouseWheel: (e: CanvasEventWheel) => void;
+        handleResize: () => void;
+    } | null = null;
+
     const updateCursors = (mode: CanvasModes) => {
         if (!state.canvas) return;
         const { default: def, hover } = CURSOR_MAP[mode] ?? CURSOR_MAP.panZoom;
@@ -84,11 +93,20 @@ export function useCanvas() {
         updateCursors(currentMode.value);
         handleResize();
 
-        c.on("mouse:down", handleMouseDown);
-        c.on("mouse:move", handleMouseMove);
-        c.on("mouse:up", handleMouseUp);
-        c.on("mouse:wheel", handleMouseWheel);
-        window.addEventListener("resize", handleResize);
+        // Store handler references for cleanup
+        canvasEventHandlers = {
+            mouseDown: handleMouseDown,
+            mouseMove: handleMouseMove,
+            mouseUp: handleMouseUp,
+            mouseWheel: handleMouseWheel,
+            handleResize,
+        };
+
+        c.on("mouse:down", canvasEventHandlers.mouseDown);
+        c.on("mouse:move", canvasEventHandlers.mouseMove);
+        c.on("mouse:up", canvasEventHandlers.mouseUp);
+        c.on("mouse:wheel", canvasEventHandlers.mouseWheel);
+        window.addEventListener("resize", canvasEventHandlers.handleResize);
     }
 
     function switchMode(mode: CanvasModes) {
@@ -297,7 +315,7 @@ export function useCanvas() {
             handlers.panZoom.down(event, state.canvas);
             state.isActive = true;
         },
-        2: (event: CanvasEvent, handler: CanvasHandler) => {
+        2: (_event: CanvasEvent, _handler: CanvasHandler) => {
             if (!state.canvas) return;
 
             if (undoActiveAction()) state.isActive = false;
@@ -316,21 +334,21 @@ export function useCanvas() {
         currentButton.value = input.button;
     };
 
-    const handleTouchMove = (event: CanvasEvent, handler: CanvasHandler, input: CanvasInput) => {
+    const handleTouchMove = (_event: CanvasEvent, _handler: CanvasHandler, input: CanvasInput) => {
         if (!state.canvas) return;
 
         if (currentMode.value === "panZoom") {
-            canvasPanZoom.touchMove(event, state.canvas, state.image.active);
+            canvasPanZoom.touchMove(_event, state.canvas, state.image.active);
             return true;
         }
 
         if (input.button === 1) {
-            handler.undo?.(state.canvas);
+            _handler.undo?.(state.canvas);
 
-            if (state.canvas._currentTransform && event.target?.selectable) {
+            if (state.canvas._currentTransform && _event.target?.selectable) {
                 state.canvas.endCurrentTransform();
             }
-            canvasPanZoom.touchMove(event, state.canvas, state.image.active);
+            canvasPanZoom.touchMove(_event, state.canvas, state.image.active);
             currentButton.value = 1;
             return true;
         }
@@ -391,10 +409,26 @@ export function useCanvas() {
     }
 
     function cleanup() {
-        window.removeEventListener("resize", handleResize);
+        // Remove window resize listener
+        if (canvasEventHandlers) {
+            window.removeEventListener("resize", canvasEventHandlers.handleResize);
+        }
+
+        // Remove all canvas event listeners before disposing
+        if (state.canvas && canvasEventHandlers) {
+            state.canvas.off("mouse:down", canvasEventHandlers.mouseDown);
+            state.canvas.off("mouse:move", canvasEventHandlers.mouseMove);
+            state.canvas.off("mouse:up", canvasEventHandlers.mouseUp);
+            state.canvas.off("mouse:wheel", canvasEventHandlers.mouseWheel);
+        }
+
+        // Clear canvas and dispose
         state.canvas?.dispose();
         controller.history.clear();
         Object.assign(state, INITIAL_STATE);
+
+        // Clear handler references
+        canvasEventHandlers = null;
     }
 
     onDeactivated(cleanup);

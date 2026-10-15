@@ -31,10 +31,10 @@ const PREVIEW_CREATORS: Record<CanvasClipMode, (point: Point) => ClipObject> = {
         new Ellipse({ ...OBJECT_CLIP_PROPS, left: point.x, top: point.y, rx: 0, ry: 0 }),
 };
 
-const FINAL_CREATORS: Record<CanvasClipMode, (payload: any) => ClipObject> = {
-    lasso: (payload) => new Path(payload as any, OBJECT_BASE_PROPS),
-    rect: (payload) => new Rect({ ...OBJECT_BASE_PROPS, ...payload }),
-    ellipse: (payload) => new Ellipse({ ...OBJECT_BASE_PROPS, ...payload }),
+const FINAL_CREATORS: Record<CanvasClipMode, (payload: unknown) => ClipObject> = {
+    lasso: (payload) => new Path(payload as unknown[], OBJECT_BASE_PROPS),
+    rect: (payload) => new Rect({ ...OBJECT_BASE_PROPS, ...(payload as Record<string, unknown>) }),
+    ellipse: (payload) => new Ellipse({ ...OBJECT_BASE_PROPS, ...(payload as Record<string, unknown>) }),
 };
 
 const getBox = (start: Point, current: Point, keepRatio = false) => {
@@ -65,7 +65,7 @@ const calculateArea: Record<CanvasClipMode, () => number> = {
     },
 };
 
-const payloads: Record<CanvasClipMode, () => any> = {
+const payloads: Record<CanvasClipMode, () => unknown> = {
     lasso: () => {
         const closed = [...state.points, state.points[0]];
         return closed.map((p, i) => (i === 0 ? ["M", p!.x, p!.y] : ["L", p!.x, p!.y]));

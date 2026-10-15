@@ -9,7 +9,8 @@
         "generate": "nuxt generate",
         "preview": "nuxt preview",
         "postinstall": "nuxt prepare",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "lint": "eslint ."
     },
     "dependencies": {
         "@nuxt/image": "^1.11.0",
@@ -19,10 +20,14 @@
         "vue-router": "^4.5.1"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@nuxt/eslint": "^1.17.0",
         "@types/node": "^24.5.2",
         "baseline-browser-mapping": "^2.9.19",
+        "eslint": "^10.12.0",
         "prettier": "^3.9.10",
-        "sass-embedded": "^1.93.0"
+        "sass-embedded": "^1.93.0",
+        "typescript-eslint": "^8.71.2"
     },
     "overrides": {
         "@mapbox/node-pre-gyp": "^2.0.3",

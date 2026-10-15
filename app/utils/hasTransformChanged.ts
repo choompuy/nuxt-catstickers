@@ -1,9 +1,11 @@
-export function hasTransformChanged(a: any, b: any) {
+export function hasTransformChanged(a: unknown, b: unknown) {
+    const aTransform = a as { left: number; top: number; scaleX: number; scaleY: number; angle: number };
+    const bTransform = b as { left: number; top: number; scaleX: number; scaleY: number; angle: number };
     return (
-        a.left !== b.left ||
-        a.top !== b.top ||
-        a.scaleX !== b.scaleX ||
-        a.scaleY !== b.scaleY ||
-        a.angle !== b.angle
+        aTransform.left !== bTransform.left ||
+        aTransform.top !== bTransform.top ||
+        aTransform.scaleX !== bTransform.scaleX ||
+        aTransform.scaleY !== bTransform.scaleY ||
+        aTransform.angle !== bTransform.angle
     );
 }

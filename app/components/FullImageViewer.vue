@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Transition } from "vue";
 import AppModal from "./base/AppModal.vue";
 import AppButton from "./base/AppButton.vue";
 

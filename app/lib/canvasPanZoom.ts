@@ -111,7 +111,7 @@ export const canvasPanZoom = {
             const zoom = canvas.getZoom();
             const p = event.viewportPoint;
 
-            let newZoom = zoom * (delta > 0 ? 0.95 : 1.05);
+            const newZoom = zoom * (delta > 0 ? 0.95 : 1.05);
             canvas.zoomToPoint(p, Math.max(0.01, Math.min(5, newZoom)));
         }
 

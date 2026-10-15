@@ -57,7 +57,7 @@ function onFocus() {
 }
 
 function onInput(e: Event) {
-    let v = (e.target as HTMLInputElement).value;
+    const v = (e.target as HTMLInputElement).value;
     internal.value = v;
 
     if (props.type === "number") {
@@ -69,7 +69,7 @@ function onInput(e: Event) {
 }
 
 function onChange() {
-    let raw = internal.value;
+    const raw = internal.value;
 
     if (props.type === "number") {
         const parsed = parseNumber(raw);

@@ -2,7 +2,6 @@
 import type { Component } from "vue";
 import type {
     CanvasObjectTypes,
-    CanvasObjectState,
     CanvasObjectStateKeys,
 } from "~/types/canvasObject";
 import { LAYOUT_FIELDS, TYPOGRAPHY_FIELDS } from "./properties/PropertiesFields";
@@ -40,24 +39,26 @@ function update<K extends CanvasObjectStateKeys>(key: K, value: K) {
 
 <template>
     <AppSection title="Properties" class="border-top">
-        <section
-            class="property-section"
-            v-if="selectedObject.state != null"
-            v-for="p in PROPERTIES_MAP[selectedObject.type || 'scene']"
-        >
-            <AppButton variant="outline" border-radius="none">
-                <div class="start">{{ p.label }}</div>
-                <div class="end"><ArrowUp /></div>
-            </AppButton>
+        <template v-if="selectedObject.state != null">
+            <section
+                class="property-section"
+                v-for="p in PROPERTIES_MAP[selectedObject.type || 'scene']"
+                :key="p.label"
+            >
+                <AppButton variant="outline" border-radius="none">
+                    <div class="start">{{ p.label }}</div>
+                    <div class="end"><ArrowUp /></div>
+                </AppButton>
 
-            <PropertyField
-                v-for="f in p.fields"
-                :key="f.key"
-                :state="selectedObject.state"
-                :field="f"
-                @update="(v) => update(f.key, v)"
-            />
-        </section>
+                <PropertyField
+                    v-for="f in p.fields"
+                    :key="f.key"
+                    :state="selectedObject.state"
+                    :field="f"
+                    @update="(v) => update(f.key, v)"
+                />
+            </section>
+        </template>
         <!-- <component
             v-if="selectedObject.state?.ID && selectedObject.type"
             :is="PROPERTIES_MAP[selectedObject.type]"

@@ -48,7 +48,7 @@ const DIFF_RULES = [
     { label: "Update", keys: [] },
 ] as const;
 
-function isEqual(a: any, b: any): boolean {
+function isEqual(a: unknown, b: unknown): boolean {
     if (a === b) return true;
 
     if (Array.isArray(a) && Array.isArray(b)) {
@@ -62,25 +62,25 @@ function isEqual(a: any, b: any): boolean {
 
         if (aKeys.length !== bKeys.length) return false;
 
-        return aKeys.every((k) => isEqual(a[k], b[k]));
+        return aKeys.every((k) => isEqual(a[k as keyof typeof a], b[k as keyof typeof b]));
     }
 
     return false;
 }
 
-export function getCanvasObjectDiff(prev: any, next: any): string | null {
+export function getCanvasObjectDiff(prev: unknown, next: unknown): string | null {
     let hasAnyChange = false;
 
     for (const rule of DIFF_RULES) {
         for (const key of rule.keys) {
-            if (!isEqual(prev[key], next[key])) {
+            if (!isEqual((prev as Record<string, unknown>)[key], (next as Record<string, unknown>)[key])) {
                 return rule.label;
             }
         }
     }
 
     for (const key in next) {
-        if (!isEqual(prev[key], next[key])) {
+        if (!isEqual((prev as Record<string, unknown>)[key], (next as Record<string, unknown>)[key])) {
             hasAnyChange = true;
             break;
         }

@@ -32,7 +32,7 @@ export type ObjectImageState = ObjectBaseState & {
 };
 
 export type ObjectPathState = ObjectBaseState & {
-    path: any[];
+    path: unknown[];
 };
 
 export type ObjectRectState = ObjectBaseState & {
