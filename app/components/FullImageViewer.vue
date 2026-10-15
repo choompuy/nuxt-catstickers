@@ -15,9 +15,11 @@ const modalVisible = defineModel<boolean>("modalVisible", {
     required: true,
 });
 
-const { scale, onWheel, onMouseDown, onMouseMove, onMouseUp, init, reset, close } = useImagePanZoom({
-    containerId: "modalContainer",
-});
+const { scale, onWheel, onMouseDown, onMouseMove, onMouseUp, init, reset, close } = useImagePanZoom(
+    {
+        containerId: "modalContainer",
+    }
+);
 const imageRef = useTemplateRef("image");
 
 const setImageRef = async () => {
@@ -57,7 +59,14 @@ watch(
 
         <template #controls>
             <Transition name="fade">
-                <AppButton v-if="scale !== 1" @click="reset" variant="ghost" title="Reset zoom" aria-label="Reset zoom" iconOnly>
+                <AppButton
+                    v-if="scale !== 1"
+                    @click="reset"
+                    variant="ghost"
+                    title="Reset zoom"
+                    aria-label="Reset zoom"
+                    iconOnly
+                >
                     <IconsArrowCircle />
                 </AppButton>
             </Transition>

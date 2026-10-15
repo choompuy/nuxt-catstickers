@@ -18,6 +18,12 @@
     }
 }
 
+@each $d in $directions {
+    .border-#{$d} {
+        border-#{$d}: 1px $border-1;
+    }
+}
+
 .flex-row {
     display: inline-flex;
     align-items: center;

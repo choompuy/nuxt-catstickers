@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
         {
             query,
             headers: { "x-api-key": apiKey },
+            cache: false,
         },
         event
     );

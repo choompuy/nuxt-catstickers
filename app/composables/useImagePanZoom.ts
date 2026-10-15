@@ -10,12 +10,15 @@ export function useImagePanZoom(options: { containerId: string } & PanZoomBaseOp
 
     function init(el: HTMLImageElement) {
         elementRef.value = el;
-        containerRect.value = document.getElementById(options.containerId)?.getBoundingClientRect() || null;
+        containerRect.value =
+            document.getElementById(options.containerId)?.getBoundingClientRect() || null;
     }
 
     function updateTransform() {
         if (!elementRef.value) return;
-        elementRef.value.style.transform = `translate(${base.offset.value.x}px, ${base.offset.value.y}px) ` + `scale(${base.scale.value})`;
+        elementRef.value.style.transform =
+            `translate(${base.offset.value.x}px, ${base.offset.value.y}px) ` +
+            `scale(${base.scale.value})`;
     }
 
     function smoothUpdate() {
@@ -102,6 +105,6 @@ export function useImagePanZoom(options: { containerId: string } & PanZoomBaseOp
         onMouseMove,
         onMouseUp,
         reset,
-        close
+        close,
     };
 }

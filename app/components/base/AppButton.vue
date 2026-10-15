@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import type { ButtonHTMLAttributes } from "vue";
+
 interface Props {
     variant?: "primary" | "secondary" | "state" | "outline" | "ghost" | "link" | "danger";
-    type?: "button" | "submit" | "reset" | "link";
+    as?: "button" | "a" | "div" | "span";
+    type?: ButtonHTMLAttributes["type"];
     size?: "small" | "medium" | "large" | "auto";
     borderRadius?: "small" | "medium" | "large" | "none";
     href?: string;
@@ -15,14 +18,30 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     variant: "primary",
+    as: "button",
     type: "button",
     size: "medium",
     borderRadius: "medium",
 });
 
 const emit = defineEmits<{
-    click: [event: MouseEvent];
+    click: [event: MouseEvent | KeyboardEvent];
 }>();
+
+const isCustomTag = props.as === "div" || props.as === "span";
+
+const buttonAttrs = computed(() => ({
+    class: buttonClass.value,
+    "data-variant": props.variant,
+    "data-size": props.size,
+    "data-border-radius": props.borderRadius,
+    "aria-label": props.ariaLabel,
+    title: props.title,
+    ...(isCustomTag && {
+        role: "button",
+        tabindex: props.disabled ? -1 : 0,
+    }),
+}));
 
 const buttonClass = computed(() => [
     "app-button",
@@ -33,23 +52,50 @@ const buttonClass = computed(() => [
     },
 ]);
 
-const buttonAttrs = computed(() => ({
-    class: buttonClass.value,
-    "data-variant": props.variant,
-    "data-size": props.size,
-    "data-border-radius": props.borderRadius,
-    "aria-label": props.ariaLabel,
-    title: props.title,
-}));
+function handleKeydown(e: KeyboardEvent) {
+    if (props.disabled) return;
+    if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        emit("click", e);
+    }
+}
+
+function handleClick(e: MouseEvent) {
+    if (props.disabled) return;
+    emit("click", e);
+}
 </script>
 
 <template>
-    <NuxtLink v-if="type === 'link'" :to="href" v-bind="buttonAttrs">
-        <slot />
-    </NuxtLink>
-    <button v-else :type="type" :disabled="disabled" v-bind="buttonAttrs" @click="emit('click', $event)">
+    <button
+        v-if="as === 'button'"
+        v-bind="buttonAttrs"
+        :type="type"
+        :disabled="disabled"
+        @click="handleClick"
+    >
         <slot />
     </button>
+
+    <NuxtLink
+        v-else-if="as === 'a'"
+        :to="href"
+        v-bind="buttonAttrs"
+        :aria-disabled="disabled"
+        @click="handleClick"
+    >
+        <slot />
+    </NuxtLink>
+
+    <div
+        v-else
+        v-bind="buttonAttrs"
+        :aria-disabled="disabled"
+        @click="handleClick"
+        @keydown="handleKeydown"
+    >
+        <slot />
+    </div>
 </template>
 
 <style lang="scss" scoped>
@@ -67,11 +113,6 @@ const buttonAttrs = computed(() => ({
     transition-property: opacity, background-color, color, border-color;
     text-wrap: nowrap;
     text-decoration: none;
-
-    &:disabled {
-        opacity: 0.6;
-        pointer-events: none;
-    }
 
     &[data-size="small"] {
         height: $button-height-small;
@@ -168,7 +209,7 @@ const buttonAttrs = computed(() => ({
             color: $surface-0;
         }
     }
-    
+
     &[data-variant="outline"] {
         border-left: 2px solid transparent;
         background-color: $surface-0;
@@ -232,6 +273,12 @@ const buttonAttrs = computed(() => ({
         &:active {
             background-color: $danger-active;
         }
+    }
+
+    &:disabled,
+    &[aria-disabled="true"] {
+        opacity: 0.6;
+        pointer-events: none;
     }
 }
 </style>

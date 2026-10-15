@@ -1,12 +1,20 @@
 const cache = new Map<string, { expire: number; data: any }>();
 const rateLimit = new Map<string, { count: number; last: number }>();
+const pending = new Map<string, Promise<any>>();
 
-const CACHE_TTL = 1000 * 60; // 1min
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 1 day
 const RATE_WINDOW = 1000 * 2; // 2sec
 const RATE_MAX = 20;
 
 function makeKey(url: string, query: any) {
-    return url + JSON.stringify(query || {});
+    const sorted = query
+        ? Object.keys(query)
+              .sort()
+              .map((k) => `${k}=${query[k]}`)
+              .join("&")
+        : "";
+
+    return `${url}?${sorted}`;
 }
 
 // Rate Limit
@@ -27,7 +35,6 @@ function checkRateLimit(ip: string) {
     }
 
     rl.count++;
-    rateLimit.set(ip, rl);
 
     if (rl.count > RATE_MAX) {
         throw createError({
@@ -48,35 +55,58 @@ function getCache(key: string) {
     return item.data;
 }
 
-function setCache(key: string, data: any) {
+function setCache(key: string, data: any, ttl: number = CACHE_TTL) {
     cache.set(key, {
         data,
-        expire: Date.now() + CACHE_TTL,
+        expire: Date.now() + ttl,
     });
 }
 
-export async function apiRequest<T>(url: string, options: { query?: any; headers?: any } = {}, event: any): Promise<T> {
-    const ip = getRequestIP(event) || "unknown";
+export async function apiRequest<T>(
+    url: string,
+    options: { query?: any; headers?: any; cache?: boolean; ttl?: number } = {},
+    event: any
+): Promise<T> {
     const key = makeKey(url, options.query);
 
-    const cached = getCache(key);
-    if (cached) return cached as T;
+    const useCache = options.cache !== false;
+    const ttl = options.ttl ?? CACHE_TTL;
 
+    if (useCache) {
+        const cached = getCache(key);
+        if (cached) return cached as T;
+    }
+
+    if (pending.has(key)) {
+        return pending.get(key) as Promise<T>;
+    }
+
+    const ip = getRequestIP(event) || "unknown";
     checkRateLimit(ip);
 
-    try {
-        const result = await $fetch(url, {
-            method: "GET",
-            query: options.query,
-            headers: options.headers,
+    const promise = $fetch<T>(url, {
+        method: "GET",
+        query: options.query,
+        headers: options.headers,
+    })
+        .then((res) => {
+            const data = res as T;
+
+            if (useCache) setCache(key, data, ttl);
+
+            return data;
+        })
+        .catch((err: any) => {
+            throw createError({
+                statusCode: err?.statusCode || 500,
+                statusMessage: "External API Error",
+            });
+        })
+        .finally(() => {
+            pending.delete(key);
         });
-        const data = result as unknown as T;
-        setCache(key, data);
-        return data;
-    } catch (err: any) {
-        throw createError({
-            statusCode: err?.statusCode || 500,
-            statusMessage: "External API Error",
-        });
-    }
+
+    pending.set(key, promise);
+
+    return promise;
 }

@@ -29,7 +29,12 @@ const handleLoad = () => {
 
 <template>
     <div class="app-image-wrapper" :style="{ aspectRatio: aspectRatio }">
-        <Skeleton v-if="isLoading" :border-radius="borderRadius" is-overlay :style="{ aspectRatio: aspectRatio, margin: 'auto' }" />
+        <Skeleton
+            v-if="isLoading"
+            :border-radius="borderRadius"
+            is-overlay
+            :style="{ aspectRatio: aspectRatio, margin: 'auto' }"
+        />
         <NuxtImg
             class="app-image"
             :class="{ 'app-border': withBorder }"
@@ -37,7 +42,7 @@ const handleLoad = () => {
             :width="imageWidth"
             :height="imageHeight"
             :loading="loadingMode || 'eager'"
-            :decoding="decoding ||'auto'"
+            :decoding="decoding || 'auto'"
             densities="x1"
             :alt="alt || ''"
             :draggable="!notDraggable"
@@ -54,7 +59,7 @@ const handleLoad = () => {
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .app-image-wrapper {
     position: relative;
     display: flex;

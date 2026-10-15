@@ -2,34 +2,122 @@ import { Canvas, Textbox } from "fabric";
 import { OBJECT_BASE_PROPS } from "~/constants/canvas";
 import type { CanvasEvent } from "~/types/canvas";
 
+interface TextState {
+    isEditing: boolean;
+    text: Textbox | null;
+}
+
+const INITIAL_STATE: TextState = {
+    isEditing: false,
+    text: null,
+};
+
+const state = { ...INITIAL_STATE };
+
+let isScaling = false;
+
+function onScale(e: any) {
+    const obj = state.text;
+    console.log(e);
+    if (!obj || Object.keys(e.transform).length <= 0) return;
+    const t = e.transform;
+
+    const originX = t.originX;
+    const originY = t.originY;
+
+    const pointerX = t.ex;
+    const pointerY = t.ey;
+
+    const baseLeft = t.original.left;
+    const baseTop = t.original.top;
+
+    let width = obj.width;
+    let height = obj.height;
+
+    if (originX === "left") {
+        width = pointerX;
+    }
+
+    if (originY === "top") {
+        height = pointerY;
+    }
+
+    width = Math.max(20, width);
+    height = Math.max(20, height);
+
+    obj.set({
+        width,
+        height,
+        scaleX: 1,
+        scaleY: 1,
+    });
+
+    obj.setCoords();
+}
+
+function attachTextTransforms(obj: Textbox) {
+    obj.on("scaling", onScale);
+    obj.on("modified", () => {
+        isScaling = false;
+    });
+}
+
+function detachTextTransforms(obj: Textbox) {
+    obj.off("scaling", onScale);
+}
+
 export const canvasText = {
-    down(event: CanvasEvent, canvas: Canvas) {
+    down(event: CanvasEvent, canvas: Canvas, onCommit?: (text: Textbox | null) => void) {
         const p = event.scenePoint;
+
+        state.isEditing = true;
 
         const text = new Textbox("", {
             ...OBJECT_BASE_PROPS,
             left: p.x,
             top: p.y,
-            fill: "#000",
+            fill: "#ffffff",
+            fontSize: 16,
             editable: true,
+            lockSkewingX: true,
+            lockSkewingY: true,
         });
 
-        canvas.add(text);
-        canvas.setActiveObject(text);
-        canvas.renderAll();
+        state.text = text;
+
+        attachTextTransforms(text);
 
         text.enterEditing();
         text.selectAll();
 
-        text.on("editing:exited", () => {
+        const handleExit = () => {
+            if (!text) return;
+
             const value = text.text?.trim();
 
-            if (!value) {
-                canvas.remove(text);
-                canvas.requestRenderAll();
+            text.off("editing:exited", handleExit);
+
+            if (value) {
+                onCommit?.(text);
+                return;
             }
-        });
+
+            onCommit?.(null);
+            this.undo(canvas);
+        };
+
+        text.on("editing:exited", handleExit);
 
         return text;
+    },
+
+    undo(canvas: Canvas) {
+        if (state.text) {
+            detachTextTransforms(state.text);
+            canvas.remove(state.text);
+        }
+
+        Object.assign(state, INITIAL_STATE);
+        canvas.requestRenderAll();
     },
 };

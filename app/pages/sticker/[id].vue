@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Skeleton from "~/components/base/Skeleton.vue";
-import Editor from "~/components/sticker/Editor.vue";
+import Editor from "~/components/canvas/Editor.vue";
 
 useHead({
     title: "Sticker",
@@ -24,7 +24,6 @@ const {
     error,
 } = await useFetch(`/api/cat/${route.params.id}`, {
     lazy: true,
-    default() {},
 });
 </script>
 
@@ -36,7 +35,7 @@ const {
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .sticker-page {
     width: 100dvw;
     height: 100dvh;

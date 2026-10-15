@@ -8,13 +8,14 @@ const imageSize = 64;
 const imageBorder = 4;
 const imageCount = 3;
 const imageSpacing = -12;
-const imagesMaxSize = (imageSize + imageSpacing - imageSpacing / imageCount) * imageCount + imageBorder + "px";
+const imagesMaxSize =
+    (imageSize + imageSpacing - imageSpacing / imageCount) * imageCount + imageBorder + "px";
 const imagesMinSize = imageSize + imageBorder + "px";
 const onSticker = ref(false);
 
 const catQuery: CatQuery = {
     limit: imageCount,
-    order: "RAND",
+    order: "RANDOM",
 };
 
 const { data: cats, error } = useFetch<Cat[]>("/api/cats", {

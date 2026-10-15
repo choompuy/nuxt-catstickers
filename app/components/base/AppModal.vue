@@ -2,11 +2,19 @@
 import { Teleport, Transition } from "vue";
 import AppButton from "./AppButton.vue";
 
+defineOptions({
+    inheritAttrs: false,
+});
+
 interface Props {
     teleportTo?: string;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    teleportTo: "body",
+});
+
+const attrs = useAttrs();
 const visible = defineModel<boolean>("visible", {
     type: Boolean,
     required: true,
@@ -23,7 +31,7 @@ const show = () => {
 
 watch(
     () => visible.value,
-    (value) => (value ? show() : close()),
+    (value) => (value ? show() : close())
 );
 
 onDeactivated(close);
@@ -33,20 +41,26 @@ useHotkeys(
     {
         escape: close,
     },
-    { preventDefault: true, condition: visible },
+    { preventDefault: true, condition: visible }
 );
 </script>
 
 <template>
-    <Teleport :to="teleportTo || 'body'">
+    <Teleport :to="teleportTo">
         <Transition name="fade">
-            <div v-if="visible" class="overlay">
+            <div v-if="visible" v-bind="attrs" class="overlay">
                 <div id="modalContainer" class="container">
                     <slot />
                 </div>
 
                 <div class="controls flex-column gap-s">
-                    <AppButton @click="close" variant="ghost" title="Close" aria-label="Close" iconOnly>
+                    <AppButton
+                        @click="close"
+                        variant="ghost"
+                        title="Close"
+                        aria-label="Close"
+                        iconOnly
+                    >
                         <IconsClose />
                     </AppButton>
 

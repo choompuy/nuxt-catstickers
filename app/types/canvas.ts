@@ -1,4 +1,11 @@
-import type { Canvas, FabricImage, FabricObject, TPointerEvent, TPointerEventInfo } from "fabric";
+import type {
+    Textbox,
+    Canvas,
+    FabricImage,
+    FabricObject,
+    TPointerEvent,
+    TPointerEventInfo,
+} from "fabric";
 
 export type CanvasClipMode = "lasso" | "rect" | "ellipse";
 export type CanvasModes = CanvasClipMode | "move" | "panZoom" | "text";
@@ -30,21 +37,38 @@ export interface CanvasHandler {
     apply?: (c: Canvas) => void;
 }
 
-export type HandlersMap = Record<CanvasModes, CanvasHandler>;
+export type CanvasHandlerMap = Record<CanvasModes, CanvasHandler>;
+
+type CanvasLayerTypeMap = {
+    textbox: Textbox;
+    image: FabricImage;
+    rect: FabricObject;
+    ellipse: FabricObject;
+    path: FabricObject;
+};
+
+export type CanvasLayerEntry = {
+    [K in keyof CanvasLayerTypeMap]: {
+        id: string;
+        label: string;
+        visible?: boolean;
+        type: K;
+        object: CanvasLayerTypeMap[K];
+    };
+}[keyof CanvasLayerTypeMap];
+
+export type CanvasLayerType = CanvasLayerEntry["type"];
 
 export interface CanvasHistoryEntry {
-    type: "add" | "remove" | "transform" | "replace" | "default";
-    object?: FabricObject;
-    oldObject?: FabricObject;
-    newObject?: FabricObject;
-    before?: any;
-    after?: any;
-    metadata?: {
-        timestamp: number;
-        label?: string;
-        mode?: CanvasModes;
-    };
+    undo(): void;
+    redo(): void;
+    label?: string;
+    mode?: CanvasModes;
+    timestamp: number;
 }
 
-export type CanvasHistoryAction = CanvasHistoryEntry["type"];
-export type CanvasHistoryMetadata = CanvasHistoryEntry["metadata"];
+export type CanvasHistoryListEntry = CanvasHistoryEntry & {
+    index: number;
+    isActive: boolean;
+    isFuture: boolean;
+};

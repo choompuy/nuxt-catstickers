@@ -19,7 +19,11 @@ export const canvasImage = {
     },
 
     scaleToFitImage(canvas: Canvas, image: FabricImage) {
-        const scale = Math.min(canvas.getWidth() / image.width, canvas.getHeight() / image.height, 1);
+        const scale = Math.min(
+            canvas.getWidth() / image.width,
+            canvas.getHeight() / image.height,
+            1
+        );
         canvas.setZoom(scale);
     },
 

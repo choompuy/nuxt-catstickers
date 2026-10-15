@@ -6,9 +6,20 @@ const normalizeKey = (key: string): string => {
     return KEY_TO_CODE[lower] || lower;
 };
 
-export function useHotkeys(hotkeys: Record<string, CallbackFn>, options?: Omit<KeyDownOptions, "modifiers">) {
-    const conditionRef = options?.condition ? (isRef(options.condition) ? options.condition : computed(options.condition)) : ref(true);
-    const targetRef = options?.target ? (isRef(options.target) ? options.target : ref(options.target)) : ref(window);
+export function useHotkeys(
+    hotkeys: Record<string, CallbackFn>,
+    options?: Omit<KeyDownOptions, "modifiers">
+) {
+    const conditionRef = options?.condition
+        ? isRef(options.condition)
+            ? options.condition
+            : computed(options.condition)
+        : ref(true);
+    const targetRef = options?.target
+        ? isRef(options.target)
+            ? options.target
+            : ref(options.target)
+        : ref(window);
 
     const shiftKey = ref(false);
     const ctrlKey = ref(false);

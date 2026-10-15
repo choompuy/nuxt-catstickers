@@ -1,5 +1,11 @@
 <template>
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none">
-        <path fill="currentColor" d="m7.825 13 5.6 5.6L12 20l-8-8 8-8 1.425 1.4-5.6 5.6H20v2H7.825Z" />
+        <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="m16 4-8 8 8 8"
+        />
     </svg>
 </template>

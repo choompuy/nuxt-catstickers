@@ -1,7 +1,7 @@
-import type { TFabricObjectProps } from "fabric";
-import type { CanvasModes, CanvasState } from "~/types/canvas";
+import type { CanvasOptions, ObjectModificationEvents, TFabricObjectProps } from "fabric";
+import type { CanvasModes } from "~/types/canvas";
 
-export const CANVAS_CONFIG = {
+export const CANVAS_CONFIG: Partial<CanvasOptions> = {
     enableRetinaScaling: true,
     fireMiddleClick: true,
     fireRightClick: true,
@@ -30,13 +30,29 @@ export const CURSOR_MAP: Record<CanvasModes, { default: string; hover: string }>
 };
 
 export const CLIP_MODES: CanvasModes[] = ["lasso", "rect", "ellipse"];
-export const UNDO_TRANSFORM = Symbol("undoTransform");
+
+export const SCENE_INDEX = {
+    BACKGROUND: 0,
+    ACTIVE_IMAGE: 1,
+    USER_LAYERS_START: 2,
+};
 
 export const SELECT_STROKE_COLOR = "rgba(255, 255, 255, 1)";
 export const SELECT_BORDER_COLOR = "rgba(255, 255, 255, .6)";
 export const SELECT_CORNER_COLOR = "rgba(255, 255, 255, 1)";
 
 export const SELECT_MIN_AREA = 300;
+
+export const OBJECT_EVENTS: (keyof ObjectModificationEvents)[] = [
+    "modified",
+    "modifyPath",
+    "modifyPoly",
+    "moving",
+    "resizing",
+    "rotating",
+    "scaling",
+    "skewing",
+];
 
 export const OBJECT_CLIP_PROPS: TFabricObjectProps = {
     absolutePositioned: true,

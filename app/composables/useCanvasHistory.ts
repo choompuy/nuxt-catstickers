@@ -1,197 +1,127 @@
-import type { FabricObject } from "fabric";
-import type { CanvasHistoryEntry, CanvasHistoryMetadata, CanvasModes, CanvasState } from "~/types/canvas";
+import type { CanvasHistoryEntry, CanvasHistoryListEntry, CanvasModes } from "~/types/canvas";
 
 interface CanvasHistoryOptions {
-    state: CanvasState;
     maxSize?: number;
-    switchMode: (mode: CanvasModes) => void;
+    onChange?: () => void;
 }
 
-export function useCanvasHistory(options: CanvasHistoryOptions) {
-    const { state, maxSize = 200, switchMode } = options;
+export function useCanvasHistory(options: CanvasHistoryOptions = {}) {
+    const { maxSize = 200, onChange } = options;
 
     const entries = shallowRef<CanvasHistoryEntry[]>([]);
-    const currentIndex = ref(-1);
+    const index = ref(-1);
 
-    const canUndo = computed(() => currentIndex.value > 0);
-    const canRedo = computed(() => currentIndex.value < entries.value.length - 1);
+    const canUndo = computed(() => index.value > 0);
+    const canRedo = computed(() => index.value < entries.value.length - 1);
+
+    const list = computed<CanvasHistoryListEntry[]>(() =>
+        entries.value
+            .map((e, i) => ({
+                ...e,
+                index: i,
+                isActive: i === index.value,
+                isFuture: i > index.value,
+            }))
+            .reverse()
+    );
 
     const init = () => {
-        entries.value = [
-            {
-                type: "default",
-                metadata: {
-                    label: "Project initialized",
-                    timestamp: Date.now(),
-                },
-            },
-        ];
-        currentIndex.value = 0;
-    };
-
-    const push = (entry: CanvasHistoryEntry, meta?: Partial<CanvasHistoryMetadata>) => {
-        const newEntries = entries.value.slice(0, currentIndex.value + 1);
-
-        newEntries.push({
-            ...entry,
-            metadata: {
-                timestamp: Date.now(),
-                ...meta,
-            },
+        command({
+            label: "Project initialized",
+            undo: () => {},
+            redo: () => {},
         });
+        index.value = 0;
+    };
 
-        if (newEntries.length > maxSize) {
-            newEntries.shift();
+    function execute(entry: CanvasHistoryEntry) {
+        const next = entries.value.slice(0, index.value + 1);
+
+        next.push(entry);
+
+        if (next.length > maxSize) {
+            next.shift();
         } else {
-            currentIndex.value++;
+            index.value++;
         }
 
-        entries.value = newEntries;
-    };
+        entries.value = next;
 
-    const saveState = (obj: FabricObject) => ({
-        left: obj.left,
-        top: obj.top,
-        scaleX: obj.scaleX,
-        scaleY: obj.scaleY,
-        angle: obj.angle,
-    });
+        entry.redo();
+        onChange?.();
+    }
 
-    const restoreState = (obj: FabricObject, objState: any) => {
-        obj.set(objState);
-        obj.setCoords();
-    };
+    function command(options: {
+        undo: () => void;
+        redo: () => void;
+        label?: string;
+        mode?: CanvasModes;
+    }) {
+        execute({
+            timestamp: Date.now(),
+            ...options,
+        });
+    }
 
-    const executeUndo = (entry: CanvasHistoryEntry) => {
-        if (!state.canvas) return;
-
-        switch (entry.type) {
-            case "transform":
-                if (entry.object && entry.before) {
-                    restoreState(entry.object, entry.before);
-                    state.canvas.requestRenderAll();
-                }
-                break;
-            case "add":
-                if (entry.object) state.canvas.remove(entry.object);
-                break;
-            case "remove":
-                if (entry.object) state.canvas.add(entry.object);
-                break;
-            case "replace":
-                if (entry.oldObject && entry.newObject) {
-                    const idx = state.canvas.getObjects().indexOf(entry.newObject);
-                    if (idx !== -1) {
-                        state.canvas.remove(entry.newObject);
-                        state.canvas.insertAt(idx, entry.oldObject);
-                    }
-                }
-                break;
-            default:
-                if (entry.before) entry.before();
-        }
-
-        state.canvas.requestRenderAll();
-    };
-
-    const executeRedo = (entry: CanvasHistoryEntry) => {
-        if (!state.canvas) return;
-
-        switch (entry.type) {
-            case "transform":
-                if (entry.object && entry.after) {
-                    restoreState(entry.object, entry.after);
-                }
-                break;
-            case "add":
-                if (entry.object) state.canvas.add(entry.object);
-                break;
-            case "remove":
-                if (entry.object) state.canvas.remove(entry.object);
-                break;
-            case "replace":
-                if (entry.oldObject && entry.newObject) {
-                    const idx = state.canvas.getObjects().indexOf(entry.oldObject);
-                    if (idx !== -1) {
-                        state.canvas.remove(entry.oldObject);
-                        state.canvas.insertAt(idx, entry.newObject);
-                    }
-                }
-                break;
-            default:
-                if (entry.after) entry.after();
-        }
-
-        state.canvas.requestRenderAll();
-    };
+    function update<T>(
+        apply: (state: T) => void,
+        from: T,
+        to: T,
+        meta?: { label?: string; mode?: CanvasModes }
+    ) {
+        command({
+            ...meta,
+            undo: () => apply(from),
+            redo: () => apply(to),
+        });
+    }
 
     const undo = () => {
         if (!canUndo.value) return;
 
-        const entry = entries.value[currentIndex.value];
+        const entry = entries.value[index.value];
         if (!entry) return;
 
-        executeUndo(entry);
-        currentIndex.value--;
+        entry.undo();
+        onChange?.();
 
-        const currentEntry = entries.value[currentIndex.value];
-        if (currentEntry?.metadata?.mode) switchMode(currentEntry.metadata.mode);
+        index.value--;
     };
 
     const redo = () => {
         if (!canRedo.value) return;
 
-        currentIndex.value++;
-        const entry = entries.value[currentIndex.value];
+        index.value++;
+
+        const entry = entries.value[index.value];
         if (!entry) return;
 
-        executeRedo(entry);
-        if (entry.metadata?.mode) switchMode(entry.metadata.mode);
+        entry.redo();
+        onChange?.();
     };
 
-    const goTo = (targetIndex: number) => {
-        if (!state.canvas) return;
-        if (targetIndex < -1 || targetIndex >= entries.value.length) return;
-        if (targetIndex === currentIndex.value) return;
+    function goTo(target: number) {
+        if (target === index.value) return;
 
-        const isMovingForward = targetIndex > currentIndex.value;
-
-        if (isMovingForward) {
-            for (let i = currentIndex.value + 1; i <= targetIndex; i++) {
-                const entry = entries.value[i];
-                if (entry) executeRedo(entry);
-            }
-        } else {
-            for (let i = currentIndex.value; i > targetIndex; i--) {
-                const entry = entries.value[i];
-                if (entry) executeUndo(entry);
-            }
-        }
-
-        currentIndex.value = targetIndex;
-        const entry = entries.value[targetIndex];
-        if (entry && entry.metadata?.mode) switchMode(entry.metadata.mode);
-
-        state.canvas.requestRenderAll();
-    };
+        while (index.value < target) redo();
+        while (index.value > target) undo();
+    }
 
     const clear = () => {
         entries.value = [];
-        currentIndex.value = -1;
+        index.value = -1;
     };
 
     return {
         init,
-        push,
-        saveState,
-        restoreState,
+        command,
+        update,
         undo,
         redo,
         goTo,
         clear,
         exposed: {
-            entries: readonly(entries),
-            index: readonly(currentIndex),
+            list: shallowReadonly(list),
             canUndo,
             canRedo,
         },

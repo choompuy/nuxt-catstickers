@@ -25,7 +25,8 @@ export function useCats() {
         if (loading.value || !hasMore.value) return;
 
         if (controller) controller.abort("Abort: New loadCats request");
-        controller = new AbortController();
+        const nextController = new AbortController();
+        controller = nextController;
 
         loading.value = true;
 
@@ -33,11 +34,11 @@ export function useCats() {
             const query: CatQuery = {
                 limit: 10,
                 page: page.value,
-                order: breed_ids ? "ASC" : "RAND",
+                order: breed_ids ? "ASC" : "RANDOM",
                 breed_ids,
             };
 
-            const data = await $fetch<Cat[]>("/api/cats", { query, signal: controller.signal });
+            const data = await $fetch<Cat[]>("/api/cats", { query, signal: nextController.signal });
 
             if (!data || !data.length) {
                 hasMore.value = false;
@@ -51,17 +52,24 @@ export function useCats() {
             }
 
             page.value++;
-        } catch (error: any) {
-            if (error?.status === 429) {
+        } catch (error: unknown) {
+            if (error instanceof Error && error.name === "AbortError") {
+                return;
+            }
+
+            if (typeof error === "object" && error && "status" in error && error.status === 429) {
                 console.warn("API rate limit hit, try again later");
                 hasMore.value = false;
                 return;
             }
             console.warn(error);
         } finally {
+            if (controller === nextController) {
+                controller = null;
+            }
             loading.value = false;
         }
     };
 
     return { cats, loading, hasMore, loadCats, resetCats };
-};
+}

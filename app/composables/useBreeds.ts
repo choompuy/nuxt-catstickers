@@ -1,11 +1,13 @@
 import type { CatBreed } from "#shared/types/cat";
 
 export function useBreeds() {
-    const breeds = ref<CatBreed[]>([]);
+    const breeds = useState<CatBreed[]>("breeds", () => []);
     const pending = ref(false);
     const error = ref<unknown>(null);
 
     const fetchBreeds = async () => {
+        if (breeds.value.length) return;
+
         pending.value = true;
         try {
             const data = await $fetch<CatBreed[]>("/api/breeds");

@@ -16,7 +16,16 @@ const {
     error,
 } = await useFetch(`/api/cat/${route.params.id}`, {
     lazy: true,
-});
+})
+    .then((data) => {
+        console.log(data.data);
+        return data;
+    })
+    .then((data) => {
+        console.log(data.data);
+        console.log(data);
+        return data;
+    });
 
 const { cats, loading, loadCats } = useCats();
 
@@ -32,7 +41,7 @@ const catBreed = computed(() => {
 const breedId = computed(() => catBreed.value?.id);
 const isFullVisible = ref(false);
 
-useHead({
+useHead(() => ({
     title: catBreed.value?.name || "Cat",
     meta: [
         {
@@ -40,7 +49,7 @@ useHead({
             content: catBreed.value?.description || "Cute and unique cat from gallery",
         },
     ],
-});
+}));
 
 const handleCopy = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -93,7 +102,7 @@ const handleLoadMore = async () => {
                     />
                 </div>
                 <div class="image-actions flex-row gap-s text-s">
-                    <AppButton :href="`/sticker/${route.params.id}`" type="link" variant="secondary">
+                    <AppButton :href="`/sticker/${route.params.id}`" as="a" variant="secondary">
                         <p>Make sticker</p>
                         <IconsSticker />
                     </AppButton>
@@ -120,7 +129,9 @@ const handleLoadMore = async () => {
                     </li>
                     <li>
                         <p class="text-weight-600">URL:</p>
-                        <NuxtLink class="text-overflow" :to="cat.url" target="_blank">{{ cat.url.replace("https://", "") }}</NuxtLink>
+                        <NuxtLink class="text-overflow" :to="cat.url" target="_blank">{{
+                            cat.url.replace("https://", "")
+                        }}</NuxtLink>
                     </li>
                 </ul>
             </AppCard>
@@ -129,47 +140,82 @@ const handleLoadMore = async () => {
                 <p style="text-align: center">No breed info</p>
             </AppCard>
             <template v-else>
-                <AppCard class="stats" title="Stats">
+                <AppCard
+                    v-if="
+                        catBreed.affection_level ||
+                        catBreed.energy_level ||
+                        catBreed.intelligence ||
+                        catBreed.child_friendly ||
+                        catBreed.dog_friendly
+                    "
+                    class="stats"
+                    title="Stats"
+                >
                     <ul class="list">
-                        <li>
+                        <li v-if="catBreed.affection_level">
                             <p>Affection:</p>
-                            <Rating name="affection_level" :length="5" :rating="catBreed.affection_level" />
+                            <Rating
+                                name="affection_level"
+                                :length="5"
+                                :rating="catBreed.affection_level"
+                            />
                         </li>
-                        <li>
+                        <li v-if="catBreed.energy_level">
                             <p>Energy:</p>
-                            <Rating name="energy_level" :length="5" :rating="catBreed.energy_level" />
+                            <Rating
+                                name="energy_level"
+                                :length="5"
+                                :rating="catBreed.energy_level"
+                            />
                         </li>
-                        <li>
+                        <li v-if="catBreed.intelligence">
                             <p>Intelligence:</p>
-                            <Rating name="intelligence" :length="5" :rating="catBreed.intelligence" />
+                            <Rating
+                                name="intelligence"
+                                :length="5"
+                                :rating="catBreed.intelligence"
+                            />
                         </li>
-                        <li>
+                        <li v-if="catBreed.child_friendly">
                             <p>Child friendly:</p>
-                            <Rating name="child_friendly" :length="5" :rating="catBreed.child_friendly" />
+                            <Rating
+                                name="child_friendly"
+                                :length="5"
+                                :rating="catBreed.child_friendly"
+                            />
                         </li>
-                        <li>
+                        <li v-if="catBreed.dog_friendly">
                             <p>Dog friendly:</p>
-                            <Rating name="dog_friendly" :length="5" :rating="catBreed.dog_friendly" />
+                            <Rating
+                                name="dog_friendly"
+                                :length="5"
+                                :rating="catBreed.dog_friendly"
+                            />
                         </li>
                     </ul>
                 </AppCard>
 
                 <AppCard class="cat-info" title="Description">
-                    <p class="breed-description">{{ catBreed.description }}</p>
+                    <p class="breed-description">
+                        {{ catBreed.description || "No description available" }}
+                    </p>
                     <ul class="list">
-                        <li>
+                        <li v-if="catBreed.origin || catBreed.country_code">
                             <p class="text-weight-600">Origin:</p>
-                            <p>{{ catBreed.origin }} ({{ catBreed.country_code }})</p>
+                            <p>
+                                {{ catBreed.origin || "Unknown"
+                                }}{{ catBreed.country_code ? ` (${catBreed.country_code})` : "" }}
+                            </p>
                         </li>
-                        <li>
+                        <li v-if="catBreed.weight?.metric">
                             <p class="text-weight-600">Weight:</p>
                             <p>{{ catBreed.weight.metric }} kg</p>
                         </li>
-                        <li>
+                        <li v-if="catBreed.life_span">
                             <p class="text-weight-600">Lifespan:</p>
                             <p>{{ catBreed.life_span }} years</p>
                         </li>
-                        <li>
+                        <li v-if="catBreed.temperament">
                             <p class="text-weight-600">Temperament:</p>
                             <p>
                                 {{ catBreed.temperament }}
@@ -180,15 +226,29 @@ const handleLoadMore = async () => {
 
                 <AppCard title="More info">
                     <div class="flex-row gap-s">
-                        <a v-if="catBreed.wikipedia_url" :href="catBreed.wikipedia_url" target="_blank">Wikipedia</a>
+                        <a
+                            v-if="catBreed.wikipedia_url"
+                            :href="catBreed.wikipedia_url"
+                            target="_blank"
+                            >Wikipedia</a
+                        >
                         <a v-if="catBreed.cfa_url" :href="catBreed.cfa_url" target="_blank">CFA</a>
-                        <a v-if="catBreed.vcahospitals_url" :href="catBreed.vcahospitals_url" target="_blank">VCA</a>
+                        <a
+                            v-if="catBreed.vcahospitals_url"
+                            :href="catBreed.vcahospitals_url"
+                            target="_blank"
+                            >VCA</a
+                        >
                     </div>
                 </AppCard>
             </template>
         </div>
 
-        <Masonry :items="cats.filter((v) => v.id !== cat?.id)" @load-more="handleLoadMore" :loading="loading">
+        <Masonry
+            :items="cats.filter((v) => v.id !== cat?.id)"
+            @load-more="handleLoadMore"
+            :loading="loading"
+        >
             <template #default="{ cat }">
                 <CatPreview :cat="cat" />
             </template>

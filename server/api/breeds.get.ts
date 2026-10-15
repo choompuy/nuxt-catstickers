@@ -9,6 +9,7 @@ export default defineEventHandler(async (event) => {
         `${apiUrl}/breeds`,
         {
             headers: { "x-api-key": apiKey },
+            cache: true,
         },
         event
     );

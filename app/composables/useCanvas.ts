@@ -1,6 +1,15 @@
-import { Canvas, FabricObject, Path } from "fabric";
-import type { CanvasButton, CanvasEvent, CanvasEventWheel, CanvasHandler, CanvasModes, CanvasState, HandlersMap } from "~/types/canvas";
-import { CANVAS_CONFIG, CLIP_MODES, CURSOR_MAP, UNDO_TRANSFORM } from "~/constants/canvas";
+import { Canvas, FabricObject } from "fabric";
+import type {
+    CanvasButton,
+    CanvasEvent,
+    CanvasEventWheel,
+    CanvasHandler,
+    CanvasModes,
+    CanvasState,
+    CanvasHandlerMap,
+    CanvasInput,
+} from "~/types/canvas";
+import { CANVAS_CONFIG, CLIP_MODES, CURSOR_MAP } from "~/constants/canvas";
 import { canvasImage } from "~/lib/canvasImage";
 import { canvasPanZoom } from "~/lib/canvasPanZoom";
 import { canvasEllipse, canvasLasso, canvasRect } from "~/lib/canvasClip";
@@ -19,27 +28,12 @@ const INITIAL_STATE: CanvasState = {
 export function useCanvas() {
     const state: CanvasState = { ...INITIAL_STATE };
 
-    const history = useCanvasHistory({
-        state: state,
-        switchMode(mode) {
-            if (currentMode.value === mode) return;
-            switchMode(mode);
-        },
-    });
+    const controller = useCanvasController({ state });
 
     let keyboardModifiers: hotkeysModifiers | null = null;
     const currentMode = ref<CanvasModes>("panZoom");
     const currentButton = ref<CanvasButton>(0);
     const currentZoom = ref<number>(0);
-    const objectListeners = new WeakMap<
-        any,
-        {
-            handlers: {
-                modified: () => void;
-            };
-            state: any;
-        }
-    >();
 
     const updateCursors = (mode: CanvasModes) => {
         if (!state.canvas) return;
@@ -52,7 +46,12 @@ export function useCanvas() {
         if (state.image.original) state.image.original.opacity = show ? 0.3 : 0;
     };
 
-    async function initCanvas(wrapperElement: HTMLElement, canvasElement: HTMLCanvasElement, imageUrl: string, modifiers?: hotkeysModifiers) {
+    async function initCanvas(
+        wrapperElement: HTMLElement,
+        canvasElement: HTMLCanvasElement,
+        imageUrl: string,
+        modifiers?: hotkeysModifiers
+    ) {
         state.wrapperEl = wrapperElement;
         state.canvasEl = canvasElement;
         state.canvas = new Canvas(canvasElement, {
@@ -61,202 +60,145 @@ export function useCanvas() {
             height: wrapperElement.clientHeight,
         });
         keyboardModifiers = modifiers || null;
+        const c = state.canvas;
 
-        const [img, clone] = await Promise.all([canvasImage.loadImage(imageUrl), canvasImage.loadImage(imageUrl).then((i) => i.clone())]);
+        const img = await canvasImage.loadImage(imageUrl);
+        const clone = await img.clone();
 
-        [img, clone].forEach((i) => {
+        [clone, img].forEach((i) => {
             i.selectable = false;
-            canvasImage.scaleToFitImage(state.canvas!, i);
-            state.canvas!.add(i);
+            i.evented = false;
+            canvasImage.scaleToFitImage(c!, i);
+            c!.add(i);
         });
 
         clone.opacity = 0;
-        state.canvas.sendObjectToBack(clone);
         state.image = {
             original: clone,
             active: img,
         };
-        currentZoom.value = state.canvas.getZoom();
-        history.init();
+        currentZoom.value = c.getZoom();
+
+        controller.init();
 
         updateCursors(currentMode.value);
         handleResize();
 
-        state.canvas.on("mouse:down", handleMouseDown);
-        state.canvas.on("mouse:move", handleMouseMove);
-        state.canvas.on("mouse:up", handleMouseUp);
-        state.canvas.on("mouse:wheel", handleMouseWheel);
+        c.on("mouse:down", handleMouseDown);
+        c.on("mouse:move", handleMouseMove);
+        c.on("mouse:up", handleMouseUp);
+        c.on("mouse:wheel", handleMouseWheel);
         window.addEventListener("resize", handleResize);
     }
 
     function switchMode(mode: CanvasModes) {
-        if (!state.canvas || mode === currentMode.value) return;
+        if (mode === currentMode.value || !state.canvas) return;
 
         const isClip = CLIP_MODES.includes(mode);
+        const image = state.image.active;
+        const clip = image?.clipPath as FabricObject | undefined;
+
         showOriginalImage(isClip);
 
-        const clip = state.image.active?.clipPath as FabricObject | undefined;
-
-        if (isClip && clip) {
-            state.canvas.setActiveObject(clip);
-        } else {
-            state.canvas.discardActiveObject();
+        if (clip) {
+            if (isClip) {
+                clip.selectable = true;
+                clip.evented = true;
+                controller.moveObjectTo(clip, -1);
+                setCanvasActiveObject(state.canvas, clip);
+            } else {
+                clip.selectable = false;
+                clip.evented = false;
+                if (state.canvas.getActiveObject() === clip) state.canvas.discardActiveObject();
+            }
         }
 
         state.canvas.skipTargetFind = mode === "panZoom";
         updateCursors(mode);
-        state.canvas.requestRenderAll();
+        controller.requestRender();
         currentMode.value = mode;
     }
 
-    function addObject(obj: FabricObject | Path, label?: string) {
-        if (!state.canvas) return;
-        state.canvas.add(obj);
-        state.canvas.setActiveObject(obj);
-        state.canvas.requestRenderAll();
-        history.push({ type: "add", object: obj }, { label: label || "Add object" });
-    }
-
-    const replaceObject = (oldObj: FabricObject, newObj: FabricObject, label?: string) => {
-        if (!state.canvas) return;
-        const index = state.canvas.getObjects().indexOf(oldObj);
-        if (index === -1) return;
-
-        state.canvas.remove(oldObj);
-        state.canvas.insertAt(index, newObj);
-        state.canvas.requestRenderAll();
-
-        history.push({ type: "replace", oldObject: oldObj, newObject: newObj }, { label: label || "Replace object" });
-    };
-
-    const detachObjectListeners = (obj: FabricObject) => {
-        const data = objectListeners.get(obj);
-        if (!data) return;
-
-        obj.off("modified", data.handlers.modified);
-        delete (obj as any)[UNDO_TRANSFORM];
-
-        objectListeners.delete(obj);
-    };
-
-    const attachObjectListeners = (obj: FabricObject, mode?: CanvasModes) => {
-        if (objectListeners.has(obj)) {
-            detachObjectListeners(obj);
-        }
-
-        let lastState = history.saveState(obj);
-
-        const onModified = () => {
-            const newState = history.saveState(obj);
-            if (!hasTransformChanged(lastState, newState)) return;
-
-            history.push(
-                {
-                    type: "transform",
-                    object: obj,
-                    before: lastState,
-                    after: newState,
-                },
-                { label: "Transform", mode },
-            );
-
-            lastState = newState;
-
-            const data = objectListeners.get(obj);
-            if (data) data.state = lastState;
-        };
-
-        const undoTransform = () => {
-            const data = objectListeners.get(obj);
-            if (!data) return;
-
-            history.restoreState(obj, data.state);
-            state.canvas?.endCurrentTransform();
-            state.canvas?.requestRenderAll();
-        };
-
-        obj.on("modified", onModified);
-        (obj as any)[UNDO_TRANSFORM] = undoTransform;
-
-        objectListeners.set(obj, {
-            handlers: {
-                modified: onModified,
-            },
-            state: lastState,
-        });
-    };
-
-    const addClipShape = (shape: FabricObject, needHistory = false) => {
-        if (!shape || !state.canvas || !state.image.active) return;
-
-        state.canvas.add(shape);
-        state.canvas.setActiveObject(shape);
-        state.image.active.clipPath = shape;
-
-        if (needHistory) {
-            history.push(
-                { type: "default", before: clearClipShape, after: () => addClipShape(shape) },
-                { label: `Draw ${currentMode.value}`, mode: currentMode.value },
-            );
-        }
-
-        attachObjectListeners(shape, currentMode.value);
-        showOriginalImage(true);
-    };
-
-    const clearClipShape = (needHistory = false) => {
-        if (!state.canvas) return;
-
+    const clearClipShape = () => {
         const image = state.image.active;
-        const clip = image?.clipPath as FabricObject | undefined;
+        if (!image) return;
 
-        if (!image || !clip) return;
+        const clip = image.clipPath as FabricObject | undefined;
+        if (!clip) return;
 
-        detachObjectListeners(clip);
-
-        if (needHistory) {
-            history.push({ type: "default", before: () => addClipShape(clip), after: clearClipShape }, { label: "Clear clip" });
-        }
-
-        state.canvas.remove(clip);
-        clip.dispose();
+        controller.removeObject(clip);
         image.clipPath = undefined;
         showOriginalImage(false);
     };
 
-    const createCropHandler = (tool: typeof canvasLasso | typeof canvasRect | typeof canvasEllipse): CanvasHandler => ({
-        down: (event, c) => {
-            if (!state.image.active || (event.target && event.target === state.image.active.clipPath)) return;
+    const addClipShape = (shape: FabricObject, mode?: CanvasModes) => {
+        if (!state.image.active) return;
 
-            if (event.target && event.target.type !== "image") {
-                c.discardActiveObject();
-            }
+        controller.addObject(shape);
+        controller.attachObject(shape, { mode });
+        state.image.active.clipPath = shape;
+        showOriginalImage(true);
+    };
 
-            if (state.image.active.clipPath) clearClipShape(true);
-            tool.down(event, c);
-        },
-        move: (event, c) =>
-            tool.move(event, c, {
-                shift: keyboardModifiers?.shift.value ?? false,
-                ctrl: keyboardModifiers?.ctrl.value ?? false,
-                alt: keyboardModifiers?.alt.value ?? false,
-            }),
+    const createCropHandler = (
+        tool: typeof canvasLasso | typeof canvasRect | typeof canvasEllipse
+    ): CanvasHandler => {
+        const clearHistory = () => {
+            const clip = state.image.active?.clipPath as FabricObject | undefined;
+            if (!clip) return;
 
-        up: (c) => {
-            if (!state.image.active) return;
-            const shape = tool.up(c);
+            controller.history.command({
+                label: "Clear clip",
+                undo: () => addClipShape(clip, tool.getMode()),
+                redo: clearClipShape,
+            });
+        };
 
-            if (!shape) return;
+        return {
+            down: (event, c) => {
+                if (
+                    !state.image.active ||
+                    (event.target && event.target === state.image.active.clipPath)
+                )
+                    return;
 
-            addClipShape(shape, true);
-        },
-        undo: (c) => {
-            if (state.image.active && state.image.active.clipPath) clearClipShape(true);
-            tool.undo(c);
-        },
-    });
+                if (event.target && event.target.type !== "image") {
+                    c.discardActiveObject();
+                }
 
-    const handlers: HandlersMap = {
+                clearHistory();
+
+                tool.down(event, c);
+            },
+            move: (event, c) =>
+                tool.move(event, c, {
+                    shift: keyboardModifiers?.shift.value ?? false,
+                    ctrl: keyboardModifiers?.ctrl.value ?? false,
+                    alt: keyboardModifiers?.alt.value ?? false,
+                }),
+            up: (c) => {
+                if (!state.image.active) return;
+
+                const shape = tool.up(c);
+
+                if (!shape) return;
+                const mode = tool.getMode();
+
+                controller.history.command({
+                    label: `Draw ${mode}`,
+                    mode,
+                    undo: clearClipShape,
+                    redo: () => addClipShape(shape, mode),
+                });
+            },
+            undo: (c) => {
+                clearHistory();
+                tool.undo(c);
+            },
+        };
+    };
+
+    const handlers: CanvasHandlerMap = {
         move: {
             down: (event, c) => {
                 if (!state.image.active) return;
@@ -266,7 +208,11 @@ export function useCanvas() {
             },
             move: () => {},
             up: () => {},
-            undo: (c) => (c.getActiveObject() as any)?.[UNDO_TRANSFORM]?.(),
+            undo: (c) => {
+                const obj = c.getActiveObject();
+
+                if (obj && controller.undoTransform(obj)) return;
+            },
         },
 
         panZoom: {
@@ -284,42 +230,77 @@ export function useCanvas() {
                 if (event.target?.type === "textbox") return;
 
                 switchMode("move");
-                const text = canvasText.down(event, c);
-                if (text) attachObjectListeners(text, "text");
+
+                const id = crypto.randomUUID();
+
+                const text = canvasText.down(event, c, (t) => {
+                    controller.removeObject(text);
+
+                    if (!t) return;
+
+                    controller.history.command({
+                        label: "Add text",
+                        mode: "text",
+                        undo: () => {
+                            controller.removeLayer(id, true);
+                        },
+                        redo: () => {
+                            controller.addLayer(
+                                { id, type: "textbox", label: "Text", object: t },
+                                undefined,
+                                true
+                            );
+                            controller.attachObject(t, { mode: "text" });
+                        },
+                    });
+                });
+
+                controller.addObject(text);
             },
             move: () => {},
             up: () => {},
+            undo: (c) => {
+                canvasText.undo(c);
+            },
         },
     };
 
-    const getHandler = (button: number, mode: CanvasModes) => (button === 1 ? handlers.panZoom : (handlers[mode] ?? null));
+    const getHandler = (button: CanvasButton, mode: CanvasModes) =>
+        button === 1 ? handlers.panZoom : (handlers[mode] ?? null);
+
+    const undoActiveAction = () => {
+        if (!state.canvas) return false;
+
+        if (state.isActive && currentButton.value !== 1) {
+            const obj = state.canvas.getActiveObject();
+
+            if (!obj || !controller.undoTransform(obj))
+                handlers[currentMode.value].undo?.(state.canvas);
+
+            return true;
+        }
+
+        return false;
+    };
 
     const buttonActions = {
-        0: (event: CanvasEvent, handler: any) => {
+        0: (event: CanvasEvent, handler: CanvasHandler) => {
             if (!state.canvas) return;
             state.isActive = true;
             handler.down(event, state.canvas);
         },
         1: (event: CanvasEvent) => {
             if (!state.canvas) return;
+
+            undoActiveAction();
+
             handlers.panZoom.down(event, state.canvas);
             state.isActive = true;
-            currentButton.value = 1;
         },
-        2: (event: CanvasEvent, handler: any) => {
+        2: (event: CanvasEvent, handler: CanvasHandler) => {
             if (!state.canvas) return;
-            if (state.isActive && currentButton.value !== 1) {
-                state.isActive = false;
 
-                if ((state.canvas.getActiveObject() as any)[UNDO_TRANSFORM]) {
-                    (state.canvas.getActiveObject() as any)[UNDO_TRANSFORM]();
-                    return;
-                }
-
-                handlers[currentMode.value].undo?.(state.canvas);
-            } else {
-                state.canvas.requestRenderAll();
-            }
+            if (undoActiveAction()) state.isActive = false;
         },
     } as const;
 
@@ -328,13 +309,14 @@ export function useCanvas() {
 
         const input = getCanvasInput(event);
         const handler = getHandler(input.button, currentMode.value);
+
         if (!handler) return;
 
         buttonActions[input.button]?.(event, handler);
         currentButton.value = input.button;
     };
 
-    const handleTouchMove = (event: CanvasEvent, handler: CanvasHandler) => {
+    const handleTouchMove = (event: CanvasEvent, handler: CanvasHandler, input: CanvasInput) => {
         if (!state.canvas) return;
 
         if (currentMode.value === "panZoom") {
@@ -342,7 +324,7 @@ export function useCanvas() {
             return true;
         }
 
-        if (getCanvasInput(event).button === 1) {
+        if (input.button === 1) {
             handler.undo?.(state.canvas);
 
             if (state.canvas._currentTransform && event.target?.selectable) {
@@ -363,7 +345,7 @@ export function useCanvas() {
         if (!handler) return;
 
         const input = getCanvasInput(event);
-        if (input.device === "touch" && handleTouchMove(event, handler)) return;
+        if (input.device === "touch" && handleTouchMove(event, handler, input)) return;
 
         handler.move(event, state.canvas);
     };
@@ -371,7 +353,8 @@ export function useCanvas() {
     const handleMouseUp = () => {
         if (!state.canvas || !state.isActive) return;
         state.isActive = false;
-        getHandler(currentButton.value, currentMode.value)?.up(state.canvas);
+        const handler = getHandler(currentButton.value, currentMode.value);
+        handler?.up?.(state.canvas);
     };
 
     const handleMouseWheel = (event: CanvasEventWheel) => {
@@ -402,13 +385,15 @@ export function useCanvas() {
         Object.assign(canvasEl.style, { width: `${w}px`, height: `${h}px` });
 
         canvas.setDimensions({ width: w, height: h });
-        [image.original, image.active].forEach((img) => img && canvasImage.fitContainImage(canvas, img));
+        [image.original, image.active].forEach(
+            (img) => img && canvasImage.fitContainImage(canvas, img)
+        );
     }
 
     function cleanup() {
         window.removeEventListener("resize", handleResize);
         state.canvas?.dispose();
-        history.clear();
+        controller.history.clear();
         Object.assign(state, INITIAL_STATE);
     }
 
@@ -416,17 +401,30 @@ export function useCanvas() {
     onBeforeUnmount(cleanup);
 
     return {
-        canvas: computed(() => state.canvas),
-        currentMode: readonly(currentMode),
-        currentZoom: readonly(currentZoom),
-        image: readonly(state.image),
-        history: history.exposed,
-        initCanvas,
-        switchMode,
-        addObject,
-        replaceObject,
-        undo: history.undo,
-        redo: history.redo,
-        goTo: history.goTo,
+        core: {
+            initCanvas,
+            switchMode,
+            handleResize,
+
+            canvas: computed(() => state.canvas),
+            currentMode: readonly(currentMode),
+            currentZoom: readonly(currentZoom),
+            image: readonly(state.image),
+        },
+
+        history: {
+            exposed: controller.history.exposed,
+            undo: controller.history.undo,
+            redo: controller.history.redo,
+            goTo: controller.history.goTo,
+        },
+
+        layers: {
+            selectedObject: controller.selectedObject,
+            layersList: controller.layersList,
+            selectObject: controller.selectObject,
+            updateObject: controller.updateObject,
+            toggleVisibility: controller.toggleLayerVisibility,
+        },
     };
 }

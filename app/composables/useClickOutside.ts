@@ -1,4 +1,8 @@
-export function useClickOutside(targetRef: Ref<HTMLElement | null>, callback: (event: MouseEvent) => void, condition: Ref<boolean>) {
+export function useClickOutside(
+    targetRef: Ref<HTMLElement | null>,
+    callback: (event: MouseEvent) => void,
+    condition: Ref<boolean>
+) {
     const handler = (event: MouseEvent) => {
         const el = targetRef.value;
         if (!el) return;

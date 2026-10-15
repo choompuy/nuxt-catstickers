@@ -8,7 +8,8 @@
         "host": "nuxt dev --host",
         "generate": "nuxt generate",
         "preview": "nuxt preview",
-        "postinstall": "nuxt prepare"
+        "postinstall": "nuxt prepare",
+        "format": "prettier --write ."
     },
     "dependencies": {
         "@nuxt/image": "^1.11.0",
@@ -20,6 +21,7 @@
     "devDependencies": {
         "@types/node": "^24.5.2",
         "baseline-browser-mapping": "^2.9.19",
+        "prettier": "^3.9.10",
         "sass-embedded": "^1.93.0"
     },
     "overrides": {

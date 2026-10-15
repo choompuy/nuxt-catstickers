@@ -37,7 +37,9 @@ const distributeItems = (cats: Cat[], reset = false) => {
 
     const colWidth = masonryRef.value.offsetWidth / columnsCount.value;
     // heights of each column (estimate by aspect ratio)
-    const heights = columns.value.map((col) => col.reduce((sum, cat) => sum + ((cat.height ?? 1) / (cat.width ?? 1)) * colWidth, 0));
+    const heights = columns.value.map((col) =>
+        col.reduce((sum, cat) => sum + ((cat.height ?? 1) / (cat.width ?? 1)) * colWidth, 0)
+    );
 
     cats.forEach((cat) => {
         // find shortest column
@@ -130,7 +132,10 @@ watch(
         isLoading.value = false;
 
         if (newLength === 0) {
-            columns.value = Array.from({ length: columnsCount.value || getColumnsCount() }, () => []);
+            columns.value = Array.from(
+                { length: columnsCount.value || getColumnsCount() },
+                () => []
+            );
             return;
         }
 
@@ -200,14 +205,18 @@ onBeforeUnmount(() => {
 
 <template>
     <div ref="masonry" class="masonry flex-row gap-sm">
-        <div v-for="(col, colIndex) in columns" :key="'column-' + colIndex" class="masonry-column flex-column gap-sm">
+        <div
+            v-for="(col, colIndex) in columns"
+            :key="'column-' + colIndex"
+            class="masonry-column flex-column gap-sm"
+        >
             <slot v-for="cat in col" :key="cat.id" :cat="cat" :column="colIndex" />
         </div>
     </div>
     <div v-if="loading" class="loading text-s text-weight-600">Loading...</div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 .loading {
     text-align: center;
     margin-inline: auto;

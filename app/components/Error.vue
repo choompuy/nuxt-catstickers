@@ -32,7 +32,7 @@ onMounted(() => {
                     </h2>
                 </div>
                 <div class="error-actions text-weight-500">
-                    <AppButton type="link" href="/" variant="primary">Go back home</AppButton>
+                    <AppButton as="a" href="/" variant="primary">Go back home</AppButton>
                 </div>
             </div>
         </div>

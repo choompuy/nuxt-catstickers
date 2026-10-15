@@ -25,8 +25,10 @@ const state = { ...INITIAL_STATE };
 
 const PREVIEW_CREATORS: Record<CanvasClipMode, (point: Point) => ClipObject> = {
     lasso: (point) => new Path(`M ${point.x} ${point.y}`, OBJECT_CLIP_PROPS),
-    rect: (point) => new Rect({ ...OBJECT_CLIP_PROPS, left: point.x, top: point.y, width: 0, height: 0 }),
-    ellipse: (point) => new Ellipse({ ...OBJECT_CLIP_PROPS, left: point.x, top: point.y, rx: 0, ry: 0 }),
+    rect: (point) =>
+        new Rect({ ...OBJECT_CLIP_PROPS, left: point.x, top: point.y, width: 0, height: 0 }),
+    ellipse: (point) =>
+        new Ellipse({ ...OBJECT_CLIP_PROPS, left: point.x, top: point.y, rx: 0, ry: 0 }),
 };
 
 const FINAL_CREATORS: Record<CanvasClipMode, (payload: any) => ClipObject> = {
@@ -109,25 +111,33 @@ const down = (mode: CanvasClipMode) => (event: CanvasEvent, canvas: Canvas) => {
     canvas.add(state.preview);
 };
 
-const move = (mode: CanvasClipMode) => (event: CanvasEvent, canvas: Canvas, modifiers: KeyModifiers) => {
-    if (!state.isDrawing || !state.preview || !state.startPoint) return;
+const move =
+    (mode: CanvasClipMode) => (event: CanvasEvent, canvas: Canvas, modifiers: KeyModifiers) => {
+        if (!state.isDrawing || !state.preview || !state.startPoint) return;
 
-    if (mode === "lasso") {
-        state.points.push(event.scenePoint);
-        const path = state.points.map((pt, i) => (i === 0 ? ["M", pt.x, pt.y] : ["L", pt.x, pt.y]));
-        (state.preview as Path).set({ path });
-    } else {
-        const box = getBox(state.startPoint, event.scenePoint, modifiers.shift);
-
-        if (mode === "rect") {
-            (state.preview as Rect).set(box);
+        if (mode === "lasso") {
+            state.points.push(event.scenePoint);
+            const path = state.points.map((pt, i) =>
+                i === 0 ? ["M", pt.x, pt.y] : ["L", pt.x, pt.y]
+            );
+            (state.preview as Path).set({ path });
         } else {
-            (state.preview as Ellipse).set({ left: box.left, top: box.top, rx: box.width / 2, ry: box.height / 2 });
-        }
-    }
+            const box = getBox(state.startPoint, event.scenePoint, modifiers.shift);
 
-    canvas.requestRenderAll();
-};
+            if (mode === "rect") {
+                (state.preview as Rect).set(box);
+            } else {
+                (state.preview as Ellipse).set({
+                    left: box.left,
+                    top: box.top,
+                    rx: box.width / 2,
+                    ry: box.height / 2,
+                });
+            }
+        }
+
+        canvas.requestRenderAll();
+    };
 
 const up = (mode: CanvasClipMode) => (canvas: Canvas) => {
     if (!state.isDrawing || !state.preview) return null;
@@ -154,6 +164,7 @@ export const createTool = (mode: CanvasClipMode) => ({
     down: down(mode),
     move: move(mode),
     up: up(mode),
+    getMode: () => mode,
 });
 
 export const canvasLasso = createTool("lasso");

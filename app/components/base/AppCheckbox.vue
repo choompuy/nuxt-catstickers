@@ -5,13 +5,24 @@ interface Props {
     label?: string;
 }
 
-const props = defineProps<Props>();
-const values = defineModel<any>("values");
+defineProps<Props>();
+const values = defineModel<string[]>("values", { default: () => [] });
+
+const emit = defineEmits<{
+    (e: "change", value: any): void;
+}>();
 </script>
 
 <template>
     <label class="app-checkbox-label flex-row gap-s">
-        <input v-model="values" :id="id" class="app-checkbox__input" :value="value" type="checkbox" />
+        <input
+            v-model="values"
+            :id="id"
+            class="app-checkbox__input"
+            :value="value"
+            type="checkbox"
+            @change="emit('change', value)"
+        />
         <span class="app-checkbox__box" />
         <p class="text-s">{{ label }}</p>
     </label>

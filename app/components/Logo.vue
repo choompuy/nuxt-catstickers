@@ -1,32 +1,45 @@
 <script setup lang="ts">
 import AppButton from "./base/AppButton.vue";
 
+type AppButtonProps = InstanceType<typeof AppButton>["$props"];
+
 interface Props {
-    iconOnly?: boolean;
+    size?: AppButtonProps["size"];
 }
 
-const props = defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    size: "medium",
+});
 
 const route = useRoute();
 
 const goHome = async () => {
     if (route.path === "/") {
-        if (window.scrollY >= 100) window.scrollTo({ top: 0 });
-        else {
-            if (Object.keys(route.query).length > 0) await navigateTo({ query: {} });
-            else window.location.reload();
+        if (window.scrollY >= 100) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
         }
-    } else {
-        await navigateTo("/");
+        if (Object.keys(route.query).length > 0) {
+            await navigateTo({ query: {} });
+            return;
+        }
+        window.location.reload();
+        return;
     }
+    await navigateTo("/");
 };
 </script>
 
 <template>
-    <AppButton class="logo" @click="goHome" variant="link" :icon-only="iconOnly" :title="iconOnly ? 'Go to home' : undefined" aria-label="Home">
+    <AppButton
+        :key="route.fullPath"
+        class="logo"
+        @click="goHome"
+        variant="link"
+        :size="size"
+        aria-label="Home"
+    >
         <IconsCat />
-        <h1 v-if="!iconOnly" class="text-l text-weight-600">CatStickers</h1>
+        <h1 class="text-l text-weight-600">CatStickers</h1>
     </AppButton>
 </template>
-
-<style lang="scss" scoped></style>

@@ -29,12 +29,9 @@ watch(
     async (value) => {
         resetCats();
         await loadCats(value);
-    }
+    },
+    { immediate: true }
 );
-
-onMounted(async () => {
-    await loadCats(breedIds.value);
-});
 </script>
 
 <template>

@@ -13,7 +13,13 @@ const goBackOrHome = () => {
 </script>
 
 <template>
-    <AppButton @click="goBackOrHome()" variant="secondary" title="Go back" aria-label="Back" iconOnly>
+    <AppButton
+        @click="goBackOrHome()"
+        variant="secondary"
+        title="Go back"
+        aria-label="Back"
+        iconOnly
+    >
         <IconsArrowLeft />
     </AppButton>
 </template>
