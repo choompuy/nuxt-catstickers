@@ -32,9 +32,11 @@ const PREVIEW_CREATORS: Record<CanvasClipMode, (point: Point) => ClipObject> = {
 };
 
 const FINAL_CREATORS: Record<CanvasClipMode, (payload: unknown) => ClipObject> = {
-    lasso: (payload) => new Path(payload as unknown[], OBJECT_BASE_PROPS),
+    lasso: (payload) =>
+        new Path(payload as ConstructorParameters<typeof Path>[0], OBJECT_BASE_PROPS),
     rect: (payload) => new Rect({ ...OBJECT_BASE_PROPS, ...(payload as Record<string, unknown>) }),
-    ellipse: (payload) => new Ellipse({ ...OBJECT_BASE_PROPS, ...(payload as Record<string, unknown>) }),
+    ellipse: (payload) =>
+        new Ellipse({ ...OBJECT_BASE_PROPS, ...(payload as Record<string, unknown>) }),
 };
 
 const getBox = (start: Point, current: Point, keepRatio = false) => {

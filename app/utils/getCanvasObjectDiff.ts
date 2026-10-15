@@ -73,14 +73,21 @@ export function getCanvasObjectDiff(prev: unknown, next: unknown): string | null
 
     for (const rule of DIFF_RULES) {
         for (const key of rule.keys) {
-            if (!isEqual((prev as Record<string, unknown>)[key], (next as Record<string, unknown>)[key])) {
+            if (
+                !isEqual(
+                    (prev as Record<string, unknown>)[key],
+                    (next as Record<string, unknown>)[key]
+                )
+            ) {
                 return rule.label;
             }
         }
     }
 
     for (const key in next) {
-        if (!isEqual((prev as Record<string, unknown>)[key], (next as Record<string, unknown>)[key])) {
+        if (
+            !isEqual((prev as Record<string, unknown>)[key], (next as Record<string, unknown>)[key])
+        ) {
             hasAnyChange = true;
             break;
         }

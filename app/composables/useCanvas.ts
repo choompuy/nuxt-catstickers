@@ -15,7 +15,77 @@ import { canvasPanZoom } from "~/lib/canvasPanZoom";
 import { canvasEllipse, canvasLasso, canvasRect } from "~/lib/canvasClip";
 import { canvasText } from "~/lib/canvasText";
 
-type hotkeysModifiers = ReturnType<typeof useHotkeys>["modifiers"];
+type HotkeysModifiers = ReturnType<typeof useHotkeys>["modifiers"];
+type Throttled<A extends unknown[]> = ((...args: A) => void) & { cancel: () => void };
+type RafThrottled<A extends unknown[]> = ((...args: A) => void) & { cancel: () => void };
+
+function throttle<A extends unknown[]>(func: (...args: A) => void, limit: number): Throttled<A> {
+    let inThrottle = false;
+    let lastCall: (() => void) | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const throttled = function (this: unknown, ...args: A) {
+        if (!inThrottle) {
+            func.apply(this, args);
+            inThrottle = true;
+            timeoutId = setTimeout(() => {
+                timeoutId = null;
+                inThrottle = false;
+                if (lastCall) {
+                    const call = lastCall;
+                    lastCall = null;
+                    call();
+                }
+            }, limit);
+        } else {
+            lastCall = () => func.apply(this, args);
+        }
+    } as Throttled<A>;
+
+    throttled.cancel = () => {
+        if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+        inThrottle = false;
+        lastCall = null;
+    };
+
+    return throttled;
+}
+
+function rafThrottle<A extends unknown[]>(func: (...args: A) => void): RafThrottled<A> {
+    let rafId: number | null = null;
+    let lastCall: (() => void) | null = null;
+
+    const throttled = function (this: unknown, ...args: A) {
+        lastCall = () => func.apply(this, args);
+        if (rafId !== null) return;
+        rafId = requestAnimationFrame(() => {
+            rafId = null;
+            if (lastCall) {
+                const call = lastCall;
+                lastCall = null;
+                call();
+            }
+        });
+    } as RafThrottled<A>;
+
+    throttled.cancel = () => {
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+        lastCall = null;
+    };
+
+    return throttled;
+}
+
+const generateId = (): string =>
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `id-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
 const INITIAL_STATE: CanvasState = {
     wrapperEl: null,
@@ -27,20 +97,21 @@ const INITIAL_STATE: CanvasState = {
 
 export function useCanvas() {
     const state: CanvasState = { ...INITIAL_STATE };
-
     const controller = useCanvasController({ state });
 
-    let keyboardModifiers: hotkeysModifiers | null = null;
+    let keyboardModifiers: HotkeysModifiers | null = null;
+    let isDisposed = false;
+
     const currentMode = ref<CanvasModes>("panZoom");
     const currentButton = ref<CanvasButton>(0);
     const currentZoom = ref<number>(0);
+    const error = ref<string | null>(null);
 
-    // Store event handler references for proper cleanup
     let canvasEventHandlers: {
         mouseDown: (e: CanvasEvent) => void;
-        mouseMove: (e: CanvasEvent) => void;
+        mouseMove: RafThrottled<[CanvasEvent]>;
         mouseUp: () => void;
-        mouseWheel: (e: CanvasEventWheel) => void;
+        mouseWheel: Throttled<[CanvasEventWheel]>;
         handleResize: () => void;
     } | null = null;
 
@@ -59,54 +130,66 @@ export function useCanvas() {
         wrapperElement: HTMLElement,
         canvasElement: HTMLCanvasElement,
         imageUrl: string,
-        modifiers?: hotkeysModifiers
+        modifiers?: HotkeysModifiers
     ) {
-        state.wrapperEl = wrapperElement;
-        state.canvasEl = canvasElement;
-        state.canvas = new Canvas(canvasElement, {
-            ...CANVAS_CONFIG,
-            width: wrapperElement.clientWidth,
-            height: wrapperElement.clientHeight,
-        });
-        keyboardModifiers = modifiers || null;
-        const c = state.canvas;
+        try {
+            isDisposed = false;
+            error.value = null;
+            state.wrapperEl = wrapperElement;
+            state.canvasEl = canvasElement;
 
-        const img = await canvasImage.loadImage(imageUrl);
-        const clone = await img.clone();
+            const c: Canvas = new Canvas(canvasElement, {
+                ...CANVAS_CONFIG,
+                width: wrapperElement.clientWidth,
+                height: wrapperElement.clientHeight,
+            });
+            state.canvas = c;
+            keyboardModifiers = modifiers || null;
+            const img = await canvasImage.loadImage(imageUrl);
 
-        [clone, img].forEach((i) => {
-            i.selectable = false;
-            i.evented = false;
-            canvasImage.scaleToFitImage(c!, i);
-            c!.add(i);
-        });
+            if (isDisposed) return;
 
-        clone.opacity = 0;
-        state.image = {
-            original: clone,
-            active: img,
-        };
-        currentZoom.value = c.getZoom();
+            const clone = await img.clone();
 
-        controller.init();
+            [clone, img].forEach((i) => {
+                i.selectable = false;
+                i.evented = false;
+                canvasImage.scaleToFitImage(c, i);
+                c.add(i);
+            });
 
-        updateCursors(currentMode.value);
-        handleResize();
+            clone.opacity = 0;
+            state.image = {
+                original: clone,
+                active: img,
+            };
 
-        // Store handler references for cleanup
-        canvasEventHandlers = {
-            mouseDown: handleMouseDown,
-            mouseMove: handleMouseMove,
-            mouseUp: handleMouseUp,
-            mouseWheel: handleMouseWheel,
-            handleResize,
-        };
+            currentZoom.value = c.getZoom();
+            controller.init();
 
-        c.on("mouse:down", canvasEventHandlers.mouseDown);
-        c.on("mouse:move", canvasEventHandlers.mouseMove);
-        c.on("mouse:up", canvasEventHandlers.mouseUp);
-        c.on("mouse:wheel", canvasEventHandlers.mouseWheel);
-        window.addEventListener("resize", canvasEventHandlers.handleResize);
+            updateCursors(currentMode.value);
+            handleResize();
+
+            canvasEventHandlers = {
+                mouseDown: handleMouseDown,
+                mouseMove: rafThrottle(handleMouseMove),
+                mouseUp: handleMouseUp,
+                mouseWheel: throttle(handleMouseWheel, 50),
+                handleResize,
+            };
+
+            c.on("mouse:down", canvasEventHandlers.mouseDown);
+            c.on("mouse:move", canvasEventHandlers.mouseMove);
+            c.on("mouse:up", canvasEventHandlers.mouseUp);
+            c.on("mouse:wheel", canvasEventHandlers.mouseWheel);
+            window.addEventListener("resize", canvasEventHandlers.handleResize);
+        } catch (err) {
+            console.error("Failed to initialize canvas:", err);
+            error.value = err instanceof Error ? err.message : "Failed to load image";
+
+            if (!isDisposed) cleanup();
+            throw err;
+        }
     }
 
     function switchMode(mode: CanvasModes) {
@@ -123,11 +206,13 @@ export function useCanvas() {
                 clip.selectable = true;
                 clip.evented = true;
                 controller.moveObjectTo(clip, -1);
-                setCanvasActiveObject(state.canvas, clip);
+                state.canvas.setActiveObject(clip);
             } else {
                 clip.selectable = false;
                 clip.evented = false;
-                if (state.canvas.getActiveObject() === clip) state.canvas.discardActiveObject();
+                if (state.canvas.getActiveObject() === clip) {
+                    state.canvas.discardActiveObject();
+                }
             }
         }
 
@@ -185,7 +270,6 @@ export function useCanvas() {
                 }
 
                 clearHistory();
-
                 tool.down(event, c);
             },
             move: (event, c) =>
@@ -198,8 +282,8 @@ export function useCanvas() {
                 if (!state.image.active) return;
 
                 const shape = tool.up(c);
-
                 if (!shape) return;
+
                 const mode = tool.getMode();
 
                 controller.history.command({
@@ -228,7 +312,6 @@ export function useCanvas() {
             up: () => {},
             undo: (c) => {
                 const obj = c.getActiveObject();
-
                 if (obj && controller.undoTransform(obj)) return;
             },
         },
@@ -248,12 +331,9 @@ export function useCanvas() {
                 if (event.target?.type === "textbox") return;
 
                 switchMode("move");
-
-                const id = crypto.randomUUID();
-
+                const id = generateId();
                 const text = canvasText.down(event, c, (t) => {
                     controller.removeObject(text);
-
                     if (!t) return;
 
                     controller.history.command({
@@ -292,12 +372,12 @@ export function useCanvas() {
         if (state.isActive && currentButton.value !== 1) {
             const obj = state.canvas.getActiveObject();
 
-            if (!obj || !controller.undoTransform(obj))
-                handlers[currentMode.value].undo?.(state.canvas);
-
+            if (!obj || !controller.undoTransform(obj)) {
+                const handler = handlers[currentMode.value];
+                if (handler) handler.undo?.(state.canvas);
+            }
             return true;
         }
-
         return false;
     };
 
@@ -311,13 +391,11 @@ export function useCanvas() {
             if (!state.canvas) return;
 
             undoActiveAction();
-
             handlers.panZoom.down(event, state.canvas);
             state.isActive = true;
         },
         2: (_event: CanvasEvent, _handler: CanvasHandler) => {
             if (!state.canvas) return;
-
             if (undoActiveAction()) state.isActive = false;
         },
     } as const;
@@ -327,28 +405,28 @@ export function useCanvas() {
 
         const input = getCanvasInput(event);
         const handler = getHandler(input.button, currentMode.value);
-
         if (!handler) return;
 
         buttonActions[input.button]?.(event, handler);
         currentButton.value = input.button;
     };
 
-    const handleTouchMove = (_event: CanvasEvent, _handler: CanvasHandler, input: CanvasInput) => {
+    const handleTouchMove = (event: CanvasEvent, handler: CanvasHandler, input: CanvasInput) => {
         if (!state.canvas) return;
 
         if (currentMode.value === "panZoom") {
-            canvasPanZoom.touchMove(_event, state.canvas, state.image.active);
+            canvasPanZoom.touchMove(event, state.canvas, state.image.active);
             return true;
         }
 
         if (input.button === 1) {
-            _handler.undo?.(state.canvas);
+            handler.undo?.(state.canvas);
 
-            if (state.canvas._currentTransform && _event.target?.selectable) {
+            if (state.canvas._currentTransform && event.target?.selectable) {
                 state.canvas.endCurrentTransform();
             }
-            canvasPanZoom.touchMove(_event, state.canvas, state.image.active);
+
+            canvasPanZoom.touchMove(event, state.canvas, state.image.active);
             currentButton.value = 1;
             return true;
         }
@@ -409,12 +487,17 @@ export function useCanvas() {
     }
 
     function cleanup() {
-        // Remove window resize listener
+        isDisposed = true;
+
+        if (!state.canvas && !canvasEventHandlers) return;
+
+        canvasEventHandlers?.mouseMove.cancel();
+        canvasEventHandlers?.mouseWheel.cancel();
+
         if (canvasEventHandlers) {
             window.removeEventListener("resize", canvasEventHandlers.handleResize);
         }
 
-        // Remove all canvas event listeners before disposing
         if (state.canvas && canvasEventHandlers) {
             state.canvas.off("mouse:down", canvasEventHandlers.mouseDown);
             state.canvas.off("mouse:move", canvasEventHandlers.mouseMove);
@@ -422,12 +505,9 @@ export function useCanvas() {
             state.canvas.off("mouse:wheel", canvasEventHandlers.mouseWheel);
         }
 
-        // Clear canvas and dispose
         state.canvas?.dispose();
         controller.history.clear();
         Object.assign(state, INITIAL_STATE);
-
-        // Clear handler references
         canvasEventHandlers = null;
     }
 
@@ -444,6 +524,7 @@ export function useCanvas() {
             currentMode: readonly(currentMode),
             currentZoom: readonly(currentZoom),
             image: readonly(state.image),
+            error: readonly(error),
         },
 
         history: {

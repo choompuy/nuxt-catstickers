@@ -66,7 +66,12 @@ function setCache(key: string, data: unknown, ttl: number = CACHE_TTL) {
 
 export async function apiRequest<T>(
     url: string,
-    options: { query?: Record<string, unknown>; headers?: Record<string, string>; cache?: boolean; ttl?: number } = {},
+    options: {
+        query?: Record<string, unknown>;
+        headers?: Record<string, string>;
+        cache?: boolean;
+        ttl?: number;
+    } = {},
     event: H3Event
 ): Promise<T> {
     const key = makeKey(url, options.query);

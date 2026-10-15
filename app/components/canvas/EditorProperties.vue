@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { Component } from "vue";
-import type {
-    CanvasObjectTypes,
-    CanvasObjectStateKeys,
-} from "~/types/canvasObject";
+import type { CanvasObjectTypes, CanvasObjectStateKeys } from "~/types/canvasObject";
 import { LAYOUT_FIELDS, TYPOGRAPHY_FIELDS } from "./properties/PropertiesFields";
 import AppSection from "~/components/base/AppSection.vue";
 import AppButton from "~/components/base/AppButton.vue";

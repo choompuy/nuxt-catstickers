@@ -41,6 +41,8 @@ export function useCanvasHistory(options: CanvasHistoryOptions = {}) {
 
         if (next.length > maxSize) {
             next.shift();
+            // When we shift, we need to decrement index to keep it in sync
+            if (index.value > 0) index.value--;
         } else {
             index.value++;
         }
@@ -102,6 +104,7 @@ export function useCanvasHistory(options: CanvasHistoryOptions = {}) {
 
     function goTo(target: number) {
         if (target === index.value) return;
+        if (target < 0 || target >= entries.value.length) return;
 
         while (index.value < target) redo();
         while (index.value > target) undo();

@@ -17,7 +17,12 @@ const state = { ...INITIAL_STATE };
 function onScale(e: unknown) {
     const obj = state.text;
     console.log(e);
-    if (!obj || !("transform" in (e as { transform: Record<string, unknown> })) || Object.keys((e as { transform: Record<string, unknown> }).transform).length <= 0) return;
+    if (
+        !obj ||
+        !("transform" in (e as { transform: Record<string, unknown> })) ||
+        Object.keys((e as { transform: Record<string, unknown> }).transform).length <= 0
+    )
+        return;
     const t = (e as { transform: Record<string, unknown> }).transform;
 
     const originX = t.originX;
@@ -32,11 +37,11 @@ function onScale(e: unknown) {
     let width = obj.width;
     let height = obj.height;
 
-    if (originX === "left") {
+    if (originX === "left" && typeof pointerX === "number") {
         width = pointerX;
     }
 
-    if (originY === "top") {
+    if (originY === "top" && typeof pointerY === "number") {
         height = pointerY;
     }
 
