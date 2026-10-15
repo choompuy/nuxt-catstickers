@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import Skeleton from "./Skeleton.vue";
 
 interface Props {
@@ -8,8 +7,9 @@ interface Props {
     imageHeight: number;
     width?: string;
     height?: string;
+    preload?: boolean;
     loadingMode?: "lazy" | "eager";
-    decoding?: "async" | "sync";
+    decoding?: "async" | "sync" | "auto";
     alt?: string;
     aspectRatio?: number;
     fitMode?: "cover" | "contain";
@@ -20,15 +20,32 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const emit = defineEmits<{ (e: "error", event: string | Event): void }>();
+
+const wrapperRef = useTemplateRef<HTMLElement>("wrapper");
 const isLoading = ref(true);
 
 const handleLoad = () => {
     isLoading.value = false;
 };
+
+const handleError = (event: string | Event) => {
+    isLoading.value = false;
+    emit("error", event);
+};
+
+// Cached images may finish loading before hydration attaches the @load
+// listener — the skeleton would then stick forever. Check the DOM state instead.
+onMounted(() => {
+    const img = wrapperRef.value?.querySelector("img");
+    if (img?.complete) {
+        isLoading.value = false;
+    }
+});
 </script>
 
 <template>
-    <div class="app-image-wrapper" :style="{ aspectRatio: aspectRatio }">
+    <div ref="wrapper" class="app-image-wrapper" :style="{ aspectRatio: aspectRatio }">
         <Skeleton
             v-if="isLoading"
             :border-radius="borderRadius"
@@ -43,14 +60,14 @@ const handleLoad = () => {
             :height="imageHeight"
             :loading="loadingMode || 'eager'"
             :decoding="decoding || 'auto'"
-            densities="x1"
+            :preload="preload"
             :alt="alt || ''"
             :draggable="!notDraggable"
             @load="handleLoad"
-            placeholder
+            @error="handleError"
             :style="{
-                width: width || 'auto',
-                height: height || 'auto',
+                width: width || (aspectRatio ? '100%' : 'auto'),
+                height: height || (aspectRatio ? '100%' : 'auto'),
                 borderRadius: borderRadius || '0',
                 opacity: isLoading ? 0 : 1,
                 objectFit: fitMode || 'cover',

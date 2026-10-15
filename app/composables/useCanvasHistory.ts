@@ -1,4 +1,5 @@
 import type { CanvasHistoryEntry, CanvasHistoryListEntry, CanvasModes } from "~/types/canvas";
+import { MAX_HISTORY_SIZE } from "~/constants/performance";
 
 interface CanvasHistoryOptions {
     maxSize?: number;
@@ -6,7 +7,7 @@ interface CanvasHistoryOptions {
 }
 
 export function useCanvasHistory(options: CanvasHistoryOptions = {}) {
-    const { maxSize = 200, onChange } = options;
+    const { maxSize = MAX_HISTORY_SIZE, onChange } = options;
 
     const entries = shallowRef<CanvasHistoryEntry[]>([]);
     const index = ref(-1);

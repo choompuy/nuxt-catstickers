@@ -10,6 +10,7 @@ import type {
     CanvasInput,
 } from "~/types/canvas";
 import { CANVAS_CONFIG, CLIP_MODES, CURSOR_MAP } from "~/constants/canvas";
+import { THROTTLE_WHEEL } from "~/constants/performance";
 import { canvasImage } from "~/lib/canvasImage";
 import { canvasPanZoom } from "~/lib/canvasPanZoom";
 import { canvasEllipse, canvasLasso, canvasRect } from "~/lib/canvasClip";
@@ -174,7 +175,7 @@ export function useCanvas() {
                 mouseDown: handleMouseDown,
                 mouseMove: rafThrottle(handleMouseMove),
                 mouseUp: handleMouseUp,
-                mouseWheel: throttle(handleMouseWheel, 50),
+                mouseWheel: throttle(handleMouseWheel, THROTTLE_WHEEL),
                 handleResize,
             };
 

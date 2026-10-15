@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { Cat } from "#shared/types/cat";
 import AppImage from "~/components/base/AppImage.vue";
+import { BREAKPOINTS } from "~/constants/breakpoints";
 
 interface Props {
     cat: Cat;
+    priority?: boolean;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    priority: false,
+});
 </script>
 
 <template>
@@ -18,7 +22,10 @@ defineProps<Props>();
             width="100%"
             height="100%"
             :aspect-ratio="cat.width / cat.height"
-            loading-mode="lazy"
+            :sizes="`(min-width: ${BREAKPOINTS.desktop}) 20vw, (min-width: ${BREAKPOINTS.tablet}) 25vw, (min-width: ${BREAKPOINTS.mobile}) 33vw, 50vw`"
+            :loading-mode="priority ? 'eager' : 'lazy'"
+            :preload="priority"
+            not-draggable
             decoding="async"
             alt="Cat image"
         />
@@ -27,10 +34,10 @@ defineProps<Props>();
                 <p
                     class="cat-title"
                     :class="{
-                        'text-secondary': !cat.breeds[0]?.name,
+                        'text-secondary': cat.breeds && cat.breeds[0]?.name,
                     }"
                 >
-                    {{ cat.breeds[0]?.name || "No breed info" }}
+                    {{ cat.breeds && cat.breeds[0]?.name ? cat.breeds[0]?.name : "No breed info" }}
                 </p>
                 <IconsArrowUpRight />
             </div>
@@ -41,9 +48,11 @@ defineProps<Props>();
 <style lang="scss" scoped>
 .cat-preview {
     position: relative;
+    display: block;
     border-radius: 0.75rem;
     transition: $transition-fancy;
     transition-property: transform;
+    content-visibility: auto;
     overflow: hidden;
 
     &:active {

@@ -249,8 +249,8 @@ const handleLoadMore = async () => {
             @load-more="handleLoadMore"
             :loading="loading"
         >
-            <template #default="{ cat }">
-                <CatPreview :cat="cat" />
+            <template #default="{ cat, priority }">
+                <CatPreview :cat="cat" :priority="priority" />
             </template>
         </Masonry>
     </template>

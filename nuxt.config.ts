@@ -29,6 +29,12 @@ export default defineNuxtConfig({
         },
     },
 
+    image: {
+        domains: ["cdn2.thecatapi.com"],
+        format: ["webp"],
+        quality: 75,
+    },
+
     typescript: {
         strict: true,
     },
