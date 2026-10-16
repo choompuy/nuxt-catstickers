@@ -139,11 +139,13 @@ export async function apiRequest<T>(
             let statusMessage = "External API Error";
 
             if (error.name === "TimeoutError" || error.name === "AbortError") {
-                statusCode = 504;
+                statusCode = 408;
                 statusMessage = "Request timeout - API did not respond in time";
             } else if (error.statusCode) {
                 statusCode = error.statusCode;
-                if (statusCode === 429) {
+                if (statusCode === 404) {
+                    statusMessage = "Resource not found";
+                } else if (statusCode === 429) {
                     statusMessage = "Too many requests - rate limit exceeded";
                 } else if (statusCode >= 400 && statusCode < 500) {
                     statusMessage = "Client error - invalid request";

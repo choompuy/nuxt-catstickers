@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import type { Cat } from "#shared/types/cat";
-import { THROTTLE_WHEEL } from "~/constants/performance";
+import {
+    THROTTLE_WHEEL,
+    THROTTLE_SCROLL_MOUSE,
+    THROTTLE_SCROLL_TOUCH,
+    THROTTLE_RESIZE_MOUSE,
+    THROTTLE_RESIZE_TOUCH,
+} from "~/constants/performance";
+import { computed } from "vue";
+import { getColumnsCount } from "~/utils/getColumnsCount";
 
 interface Props {
     items: Cat[];
@@ -20,6 +28,49 @@ const columnsCount = ref(0);
 const isPageActive = ref(true);
 const isLoading = ref(false);
 
+// Touch device detection
+const isTouchDevice = typeof window !== "undefined" && "ontouchstart" in window;
+
+// Device-specific throttle values
+const scrollThrottle = isTouchDevice ? THROTTLE_SCROLL_TOUCH : THROTTLE_SCROLL_MOUSE;
+const resizeThrottle = isTouchDevice ? THROTTLE_RESIZE_TOUCH : THROTTLE_RESIZE_MOUSE;
+
+// Memoized distribution of items across columns
+const distributedColumns = computed(() => {
+    if (!props.items.length || !isPageActive.value) return [];
+
+    const count = getColumnsCount();
+    const colCount = count;
+
+    // Initialize empty columns
+    const newColumns: Cat[][] = Array.from({ length: colCount }, () => []);
+
+    // Calculate heights for balancing
+    const heights = newColumns.map(() => 0);
+
+    // Distribute all items
+    props.items.forEach((cat) => {
+        const aspectRatio = getCatAspectRatio(cat);
+
+        // Find the shortest column
+        let minIndex = 0;
+        let minHeight = heights[0] ?? 0;
+
+        for (let i = 1; i < heights.length; i++) {
+            const currentHeight = heights[i] ?? 0;
+            if (currentHeight < minHeight) {
+                minHeight = currentHeight;
+                minIndex = i;
+            }
+        }
+
+        newColumns[minIndex]?.push(cat);
+        heights[minIndex] = (heights[minIndex] ?? 0) + aspectRatio;
+    });
+
+    return newColumns;
+});
+
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 let resizeRafId: number | null = null;
 let listenersAttached = false;
@@ -27,51 +78,10 @@ let isFilling = false;
 
 const getCatAspectRatio = (cat: Cat) => (cat.height ?? 1) / (cat.width ?? 1);
 
-// If reset === true, rebuild empty columns first and distribute all items
-const distributeItems = (cats: Cat[], reset = false) => {
-    if (!isPageActive.value || !masonryRef.value) return;
-
-    const count = getColumnsCount();
-    columnsCount.value = count;
-
-    if (reset || columns.value.length !== count) {
-        columns.value = Array.from({ length: count }, () => []);
-    }
-
-    // All columns share the same width, so a column's height is proportional
-    // to the sum of aspect ratios — enough for balancing, no pixel math needed
-    const heights = columns.value.map((col) =>
-        col.reduce((sum, cat) => sum + getCatAspectRatio(cat), 0)
-    );
-
-    const additions: Cat[][] = Array.from({ length: columns.value.length }, () => []);
-
-    cats.forEach((cat) => {
-        // find the shortest column
-        let minIndex = 0;
-        let min = heights[0] ?? 0;
-
-        for (let i = 1; i < heights.length; i++) {
-            const currentHeight = heights[i] ?? 0;
-            if (currentHeight < min) {
-                min = currentHeight;
-                minIndex = i;
-            }
-        }
-
-        additions[minIndex]?.push(cat);
-        heights[minIndex] = (heights[minIndex] ?? 0) + getCatAspectRatio(cat);
-    });
-
-    columns.value = columns.value.map((col, i) =>
-        additions[i]?.length ? [...col, ...additions[i]!] : col
-    );
-};
-
 const rebuildGrid = async () => {
     if (!isPageActive.value || !masonryRef.value) return;
 
-    distributeItems([...props.items], true);
+    columns.value = distributedColumns.value;
     await fillViewportIfNeeded();
 };
 
@@ -83,9 +93,21 @@ const onResize = () => {
 
         if (getColumnsCount() === columnsCount.value) return;
 
-        distributeItems([...props.items], true);
+        columns.value = distributedColumns.value;
         void fillViewportIfNeeded();
     });
+};
+
+// Debounced resize handler for touch devices
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const onResizeDebounced = () => {
+    if (resizeTimeout !== null) return;
+
+    resizeTimeout = setTimeout(() => {
+        resizeTimeout = null;
+        onResize();
+    }, resizeThrottle);
 };
 
 const handleScroll = () => {
@@ -103,7 +125,7 @@ const handleScroll = () => {
             isLoading.value = true;
             emit("loadMore");
         }
-    }, THROTTLE_WHEEL);
+    }, scrollThrottle);
 };
 
 const fillViewportIfNeeded = async () => {
@@ -132,6 +154,10 @@ const fillViewportIfNeeded = async () => {
             // wait a bit for the parent to fetch/push new items
             await new Promise((resolve) => setTimeout(resolve, 250));
         }
+    } catch (error) {
+        console.error("Error filling viewport:", error);
+        // Reset loading state to prevent stuck loading
+        isLoading.value = false;
     } finally {
         isFilling = false;
     }
@@ -156,7 +182,8 @@ watch(
         }
 
         if (newLength > oldLength) {
-            distributeItems(props.items.slice(oldLength), false);
+            // Use the computed distributed columns
+            columns.value = distributedColumns.value;
             await fillViewportIfNeeded();
         }
     },
@@ -167,7 +194,9 @@ const attachListeners = () => {
     if (listenersAttached) return;
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("resize", isTouchDevice ? onResizeDebounced : onResize, {
+        passive: true,
+    });
     listenersAttached = true;
 };
 
@@ -175,12 +204,17 @@ const detachListeners = () => {
     if (!listenersAttached) return;
 
     window.removeEventListener("scroll", handleScroll);
-    window.removeEventListener("resize", onResize);
+    window.removeEventListener("resize", isTouchDevice ? onResizeDebounced : onResize);
     listenersAttached = false;
 
     if (resizeRafId !== null) {
         cancelAnimationFrame(resizeRafId);
         resizeRafId = null;
+    }
+
+    if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = null;
     }
 
     if (scrollTimeout !== null) {
@@ -204,7 +238,7 @@ onDeactivated(() => {
 
 onMounted(async () => {
     attachListeners();
-    distributeItems([...props.items], true);
+    columns.value = distributedColumns.value;
     await fillViewportIfNeeded();
 });
 

@@ -34,7 +34,7 @@ withDefaults(defineProps<Props>(), {
                 <p
                     class="cat-title"
                     :class="{
-                        'text-secondary': cat.breeds && cat.breeds[0]?.name,
+                        'text-secondary': !(cat.breeds && cat.breeds[0]?.name),
                     }"
                 >
                     {{ cat.breeds && cat.breeds[0]?.name ? cat.breeds[0]?.name : "No breed info" }}
